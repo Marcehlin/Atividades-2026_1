@@ -1,0 +1,1 @@
+Essee repositório serve para subir minhas atividades da faculdade feitas o primeiro semestre de 2026 (5º período).
