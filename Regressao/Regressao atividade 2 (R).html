@@ -7930,7 +7930,7 @@ $Y_i = \beta_0 + \beta_1 X_i + \varepsilon_i$</p>
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
 <p>Foi ajustado um modelo de regressão linear simples para avaliar a relação entre $X$ e $Y$.</p>
 <p>As estimações foram:  $\hat{\beta_0} = 0.6 $ $\hat{\beta_1}  = 5.19$</p>
-<p>A estatística usada para fazer o teste é $t = \frac{\hat{\beta_1} - \beta_1}{\sqrt{MSE/\sum (X_i-\bar{X})^2}}$, e essa estatística sob $H_0$ segue uma distribuição $t$ de student com n-2 graus de liberdade</p>
+<p>A estatística usada para fazer o teste é $t =\frac{\hat{\beta_1} - \beta_1}{EP(\hat{\beta_1})} = \frac{\hat{\beta_1} - \beta_1}{\sqrt{MSE/\sum (X_i-\bar{X})^2}}$, e essa estatística sob $H_0$ segue uma distribuição $t$ de student com n-2 graus de liberdade</p>
 <p>A partir dos resultados do teste feito acima, observa-se que o coeficiente associado a $X$ é estatisticamente significativo, com valor-p (5.86e-11) próximo de zero, .</p>
 <p>Dessa forma, rejeitamos $H_0$, há evidência de que $\beta_1 \neq 0$, indicando uma relação linear entre $X$ e $Y$ no range de [10; 20].</p>
 <hr/>
