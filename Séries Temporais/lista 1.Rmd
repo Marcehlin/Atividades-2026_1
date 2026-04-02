@@ -1,0 +1,189 @@
+---
+title: "Lista 1 - Séries Temporais"
+subtitle: "Marcelo Xinhong Huang - RA: 832111, Pedro Henrique de Araujo - RA: 831235, Yumi Ichibara - RA:"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+use_python(Sys.which("python"), required = TRUE)
+```
+
+```{r, echo=FALSE}
+# Códigos fornecidos em aula
+
+media.amplitude<-function(x,k)
+{N<-length(x)
+x.m<-rep(0,(N-k))
+x.r<-rep(0,(N-k))
+for (i in 1:(N-k)) x.m[i]<-mean(x[i:(i+k)])
+for (i in 1:(N-k)) x.r[i]<-max(x[i:(i+k)])-min(x[i:(i+k)])
+plot(x.m,x.r,xlab="medias",ylab="amplitude")
+aa1<-lm(x.r~x.m)
+print(summary(aa1))
+abline(aa1$coef[1],aa1$coef[2],col=2)
+}
+
+media.moveis<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstar<-rep(0,N)
+for (i in 1:k) xstar[i]<-NA
+for (i in (1+k):(N-k)) xstar[i]<-mean(x[(i-k):(i+k)],na.rm=TRUE)
+for (i in (N-k+1):N) xstar[i]<-NA
+ts.plot(x)
+lines(xstar, col=2, lwd=2)
+xstar}
+
+mediana.bloco<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstar<-rep(0,N)
+for (i in 1:k) xstar[i]<-NA
+for (i in (1+k):(N-k)) xstar[i]<-median(x[(i-k):(i+k)],na.rm=TRUE)
+for (i in (N-k+1):N) xstar[i]<-NA
+ts.plot(x)
+lines(xstar, col=2, lwd=2)
+xstar}
+
+media.bloco<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstar<-rep(NA,N)
+valor<-N%/%k
+for (i in 1:valor)
+  xstar[((i-1)*k+1):(i*k)]<-rep(mean(x[((i-1)*k+1):(i*k)],na.rm=TRUE),k)
+for (i in (valor*k+1):N) xstar[i]<-mean(x[(valor*k+1):N])
+ts.plot(x)
+lines(xstar, col=2, lwd=2)
+xstar}
+
+amplitude.bloco<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstarM<-rep(NA,N)
+xstarm<-rep(NA,N)
+valor<-N%/%k
+for (i in 1:valor){
+  xstarM[((i-1)*k+1):(i*k)]<-rep(max(x[((i-1)*k+1):(i*k)],na.rm=TRUE),k)
+  xstarm[((i-1)*k+1):(i*k)]<-rep(min(x[((i-1)*k+1):(i*k)],na.rm=TRUE),k)
+}
+ts.plot(x)
+lines(xstarM, col=2,lty=3, lwd=2)
+lines(xstarm, col=2,lty=3, lwd=2)
+}
+
+grafico.sazonalidade<-function(x,s){
+  x<-as.vector(x)
+  N<-length(x)
+  Mx<-max(x)
+  mx<-min(x)
+  valor<-N%/%s
+  eixox<-seq(1:s)
+  plot(eixox,x[1:s],ylim=c(mx,Mx),xlim=c(0,(s+1)),type="l")
+  for (i in 1:valor){
+    y<-rep(NA,s)
+    y[1:s]<-x[((i-1)*s+1):(i*s)]
+     lines(y,col=i)
+  }
+  y<-rep(NA,s)
+  y<-x[(valor*s+1):N]
+  lines(y,col=(valor+1))
+}
+
+grafico.boxplot<-function(x,s){
+  x<-as.vector(x)
+  N<-length(x)
+  valor<-N%/%s
+  apoiox<-rep(NA,N)
+  apoioy<-rep(1:s,valor)
+  for(i in 1:(s*valor)) apoiox[i]<-apoioy[i]
+  boxplot(x~apoiox,xlab='Sazonalidade')
+}
+
+polinomio.ajustado<-function(x,p){
+  x<-as.vector(x)
+  N<-length(x)
+  XX<-matrix(0,N,p)
+  for (i in 1:N) {
+    for (j in 1:p) XX[i,j]<-i**j}
+  aa<-lm(x~XX)
+  ts.plot(x)
+  lines(aa$fitted,col=2)
+  aa$res}
+```
+
+### **Série 1 - Preço dos ovos no século XX**
+
+A série escolhida retrata o preço de ovos durante os anos de 1900 a 1999. Plotando os dados para visualizarmos o comportamente da série:
+
+```{r, echo=FALSE}
+# Plotando a série temporal
+dados <- read.csv("eggs.csv")
+eggs <- ts(dados$y, start=1900)
+plot(eggs,
+     main='Preço dos ovos no século XX',
+     xlab='Ano',
+     ylab='Preço',
+     col='blue')
+```
+
+Analisando a série temporal, podemos ver que a série possui uma **tendência decrescente**, em vista de que o preço dos ovos decaiu ao passar dos anos nessa década. Porém, é válido notar que a série possui algumas anormalidades, observadas em 2 picos de crescimento bruscos em meio à decaída dos preços: por volta de 1915 e 1945. Isso pode ser explicado pelas Guerras Mundiais ocorridas nesse período, justificativa plausível para a subida dos preços.
+
+Sobre a variância da série, é possível observar que, exceto pelos picos durante os conflitos militares mencionados, sua variabilidade tem tendência a permanecer igual ao passar do tempo. Fazendo o gráfico de amplitude-média:
+
+```{r}
+media.amplitude(eggs,2)
+```
+
+Para comprovar, podemos realizar a transformação de Box-Cox na série:
+
+```{r}
+eggs2 <- log(eggs)
+plot(eggs2,
+     main='Preço dos ovos no século XX (pós Box-Cox)',
+     xlab='Ano',
+     ylab='Preço',
+     col='blue')
+```
+
+Após o gráfico de amplitude-média e transformação Box-Cox, os picos de crescimento da série foram diminuídos, porém o comportamento geral da série pareceu não se alterar muito.
+
+Para entender melhor o decrescimento da série, podemos observar no gráfico seguinte:
+
+```{r}
+print(media.moveis(eggs2,2))
+```
+
+Como visto no gráfico, a média a cada 2 anos tende a decair, logo podemos concluir que a série é **decrescente**.
+
+Para retirar a tendência da série, podemos usar a função $\texttt{diff(eggs)}$ para fazer a diferenciação dos valores da série e retirar a sua tendência, para que assim possamos analisar a série sem que os comportamentos sejam mascarados pela queda dos preços.
+
+```{r}
+eggs3 <- diff(eggs2)
+plot(eggs3,
+     main='Preço dos ovos no século XX (pós diferenciação)',
+     xlab='Ano',
+     ylab='Preço',
+     col='blue')
+```
+
+Verificando as médias:
+
+```{r}
+media.moveis(eggs3, 2)
+```
+
+Analisando os gráficos, podemos ver que a diferenciação auxiliou em retirar a tendência decrescente da série, deixando-a estacionária, pois a média da série temporal está em torno do zero.
+
+Antes da diferenciação, podemos verificar apenas analisando a série que ela não é sazonal, pois decresce ao longo do tempo. Verificando a **sazonalidade** pós diferenciação:
+
+```{r}
+grafico.sazonalidade(eggs2,5)
+```
+
+Como as linhas estão embaralhadas e sem padrão evidente, concluímos que a série temporal não possui sazonalidade, mesmo após a diferenciação.
