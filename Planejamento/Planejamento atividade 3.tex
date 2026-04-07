@@ -10,9 +10,6 @@
 \usepackage{graphicx} % needed for images
 \usepackage{bm} % para vetor em negrito \bm{x}
 
-% Comando para qui-quadrado
-\newcommand{\chisq}{\chi^2}
-
 \begin{document}
 
 \section*{Atividade 3 -- Planejamento}
@@ -40,7 +37,7 @@ Em 1879, dois físicos Albert Michelson e Edward Morley queriam medir a velocida
 Eles fizeram 5 tipos diferentes de experimentos, em cada tipo de experimento fizeram 
 20 observações, depois registraram os dados sobre velocidades medidas.
 
-Note que os dados do R são subtraídos por 299000 para simplicidade,
+Note que os dados do R são subtraídos por 299000 por simplicidade,
  e a unidade de medida é km/segundo.
 
 O interesse dessa atividade é investigar se em média os experimentos possuem diferenças 
@@ -67,7 +64,7 @@ Exp 1 & Exp 2 & Exp 3 & Exp 4 & Exp 5\\
 960 & 800 & 840  & 780 & 870\\
 \hline
 \end{tabular}
-\caption{Velocidades da luz em km/s (-299000) medidas nos experiementos }
+\caption{Velocidades da luz em km/s (-299000) medidas nos experimentos }
 \end{table}
 
 \subsection*{Solução:}
@@ -82,11 +79,11 @@ H_0: \mu_1 = \mu_2 = \mu_3 = \mu_4 = \mu_5
 \]
 
 \[
-H_1: \text{Existe uma diferença nas médias entre tratamentos.}
+H_1: \text{Pelo menos uma das médias difere das demais médias}
 \]
 
 Usando ferramentas, são encontrados estatísticas descritivas para cada tratamento.
-See Table 2.
+Veja a tabela 2.
 
 \begin{table}[ht]
 \centering
@@ -124,19 +121,45 @@ Exp 5 & 20 & 831.5 & 54.22 & 740 & 950 \\
     \end{minipage}
 \end{figure}
 
+\begin{table}[ht]
+\centering
+\begin{tabular}{lccc}
+\toprule
+Tratamento & valor-p\_SW & valor-p\_AD & valor-p\_SK \\
+\midrule
+Exp 1 & 0.10 & 0.07 & 0.54 \\
+Exp 2 & 0.17 & 0.18 & 0.92 \\
+Exp 3 & 0.003 & 0.0006 & 0.03 \\
+Exp 4 & 0.57 & 0.66 & 0.98 \\
+Exp 5 & 0.19 & 0.10 & 0.38 \\
+\bottomrule
+\end{tabular}
+\caption{Estatísticas descritivas para cada tratamento}
+\end{table}
+
 Pelos Q-Q plots da figura 1, não há indícios visuais de alguma violação severa da suposição da normalidade,
-já que a maioria dos pontos estão próximos de qq-line. Assim é aceita a suposição da normalidade.\\
+já que a maioria dos pontos estão próximos de qq-line, e pelo resultados de testes de normalidade da tabela 3, 
+os valores-p são maiores que 0.05, exceto os dados do 3º tratamento. Mas como a amostra é pequena, isso é tolerável.
+(e poderíamos aceitar )
+Assim é aceita a suposição da normalidade.\\
 Considerando os valores de desvios padrões da tabela 2 e o gráfico de residuos da figura 2, 
 os desvios são, de um ponto de vista grossa, similares, e o espalhamento dos resíduos não são muito diferentes,
 então é assumido que a suposição de variâncias iguais está satisfeita.
-\\\\\\\\\\\\\\
+(Aliás o modelo linear usado $Y_{ij} = \mu + \alpha_i + \varepsilon_{ij}$ já assume que os erros são iid.)
+
+Logo temos as suposições satisfeitas para fazer uma análise de variância. 
+
 \subsection*{Resultados: teste ANOVA}
+Usando a estatística 
+    \[
+    F_0 = \frac{SS_{Trat}/4}{SS_{E}/95} = \frac{MS_{Trat}}{MS_{E}} \sim F_{4,95}
+    \]
 
 \begin{table}[ht]
 \centering
 \begin{tabular}{lccccc}
 \toprule
-Origem & GL & SS & MS & Valor de F & Valor-p \\
+Fonte da variação& GL & SS & MS & Valor de $F_0$ & Valor-p \\
 \midrule
 Tratamento & 4 & 94514 & 23629 & 4.288 & 0.00311 \\
 Resíduos & 95 & 523510 & 5511 \\
@@ -145,7 +168,7 @@ Resíduos & 95 & 523510 & 5511 \\
 \caption{Análise de Variância}
 \end{table}
 
-A estatístiaca F de 4.288 é significativa e o valor-p $= 0.00311$ é próximo de zero,
+A estatística $F_0$ de 4.288 é significativa e o valor-p $= 0.00311$ é próximo de zero,
 então a hipótese nula é rejeitada.
 Os dados ofereceram evidências suficientes para concluir que a média das velocidades medidas
 dos diferentes experimentos são diferentes, ou seja, já que $H_0$ rejeitada, pelo menos uma média
