@@ -37,7 +37,10 @@ Em 1879, dois físicos Albert Michelson e Edward Morley queriam medir a velocida
 Eles fizeram 5 tipos diferentes de experimentos, em cada tipo de experimento fizeram 
 20 observações, depois registraram os dados sobre velocidades medidas.
 
-Note que os dados do R são subtraídos por 299000 por simplicidade,
+Origem dos dados: \textbf{\textit{A. J. Weekes (1986) A Genstat Primer. London: Edward Arnold.}} 
+\\
+
+Note que os dados disponibilizados pelo R são subtraídos por 299000 por simplicidade,
  e a unidade de medida é km/segundo.
 
 O interesse dessa atividade é investigar se em média os experimentos possuem diferenças 
@@ -132,21 +135,34 @@ Exp 2 & 0.17 & 0.18 & 0.92 \\
 Exp 3 & 0.003 & 0.0006 & 0.03 \\
 Exp 4 & 0.57 & 0.66 & 0.98 \\
 Exp 5 & 0.19 & 0.10 & 0.38 \\
+
 \bottomrule
 \end{tabular}
-\caption{Estatísticas descritivas para cada tratamento}
+\caption{Valores-p dos testes da normalidade}
 \end{table}
 
-Pelos Q-Q plots da figura 1, não há indícios visuais de alguma violação severa da suposição da normalidade,
-já que a maioria dos pontos estão próximos de qq-line, e pelo resultados de testes de normalidade da tabela 3, 
-os valores-p são maiores que 0.05, exceto os dados do 3º tratamento. Mas como a amostra é pequena, isso é tolerável.
-(e poderíamos aceitar )
-Assim é aceita a suposição da normalidade.\\
-Considerando os valores de desvios padrões da tabela 2 e o gráfico de residuos da figura 2, 
-os desvios são, de um ponto de vista grossa, similares, e o espalhamento dos resíduos não são muito diferentes,
-então é assumido que a suposição de variâncias iguais está satisfeita.
-(Aliás o modelo linear usado $Y_{ij} = \mu + \alpha_i + \varepsilon_{ij}$ já assume que os erros são iid.)
+\begin{table}[ht]
+\centering
+\begin{tabular}{l}
+\toprule
+Teste de homocedasticidade: Fligner-Killeen \\
+\midrule
+Valor-p: 0.2152 \\
+\bottomrule
+\end{tabular}
+\caption{Valor-p do teste de Fligner-Killeen}
+\end{table}
 
+Pelos Q-Q plots da figura 1, percebe-se que a maioria dos pontos estão próximos de qq-line, e pelo resultados de testes de normalidade da tabela 3, 
+os valores-p são maiores que 0.05, exceto os dados do 3º tratamento. Mas como a amostra é pequena, isso é tolerável.
+(e poderíamos fazer testes e QQ-plot usando todas as observações da amostra sem considerar níveis, mas isso não é necessário)
+
+Assim não há indícios visuais de alguma violação severa da suposição da normalidade, e a suposição da normalidade é aceita.\\
+Considerando os valores de desvios padrões da tabela 2 e o gráfico de residuos da figura 2, 
+os desvios são mais ou menos similares, e o espalhamento dos resíduos não são muito diferentes.
+Além disso, é feito um teste de Fligner-Killeen para verificar a homocedasticidades, valor-p deu 0.2152 maior que 0.05 indica que não rejeitamos a hipótese de homoscedasticidade.
+Então é assumido que a suposição de variâncias iguais está satisfeita.
+\\
 Logo temos as suposições satisfeitas para fazer uma análise de variância. 
 
 \subsection*{Resultados: teste ANOVA}
@@ -173,4 +189,90 @@ então a hipótese nula é rejeitada.
 Os dados ofereceram evidências suficientes para concluir que a média das velocidades medidas
 dos diferentes experimentos são diferentes, ou seja, já que $H_0$ rejeitada, pelo menos uma média
 de um tratamento é diferente das outras.
+
+\subsection*{Intervalos de Confiança ($\alpha = 5\%$) para as médias de cada tratamento}
+
+Para cada tratamento \(i\), o intervalo de confiança de \(100(1-\alpha)\%\) 
+para a média populacional \(\mu_i\) é construído a partir da estatística
+\[
+T_i = \frac{\bar{Y}_i - \mu_i}{MSE / \sqrt{20}} \sim t_{95}.
+\]
+Isolando \(\mu_i\), obtemos:
+\[
+\left[ \bar{Y}_i \pm t_{95;\,0,975} \times \sqrt{\frac{MSE}{\sqrt{20}}} \right].
+\]
+Os resultados são apresentados na Tabela 6.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+Experimento & Média & Desvio Padrão & Lim. inferior & Lim. superior \\
+\midrule
+1 & 909 & 104,7 & 860 & 958 \\
+2 & 856 & 61,2  & 827 & 885 \\
+3 & 845 & 79,1  & 808 & 882 \\
+4 & 820 & 60,0  & 792 & 849 \\
+5 & 832 & 54,2  & 806 & 857 \\
+\bottomrule
+\end{tabular}
+\caption{Intervalos de Confiança para as médias de cada experimento}
+\label{tab:ic_medias}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\linewidth]{atv3 ic das medias.png}
+\caption{Intervalos de Confiança de $\alpha = 5\%$ para as médias de cada tratamento}
+\label{fig:ic_medias}
+\end{figure}
+
+Note que há intervalos disjuntos (tratamento 1 e 4), o que já indica a existência de diferença na média das velocidades observadas entre tratamentos.
+
+\subsection*{Intervalos de Confiança Simultâneo ($\alpha = 5\%$) para as diferenças entre as médias dos tratamentos}
+
+Temos \(r = 5\) níveis de tratamento e \(n = 20\) observações em cada nível. Pelo método de Bonferroni, o intervalo de confiança simultâneo para a diferença \(\mu_i - \mu_j\) é:
+\[
+(\bar{Y}_i - \bar{Y}_j) \pm t_{95;\,1-\frac{0,05}{2 \cdot 10}} \times \sqrt{2 \cdot MSE \cdot \frac{1}{20}}.
+\]
+Os resultados são apresentados na Tabela 7.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Comparação & Diferença & Lim. inferior & Lim. superior \\
+\midrule
+1 - 2 & 53,0 & -14,468109 & 120,46811 \\
+1 - 3 & 64,0 &  -3,468109 & 131,46811 \\
+1 - 4 & 88,5 &  21,031891 & 155,96811 \\
+1 - 5 & 77,5 &  10,031891 & 144,96811 \\
+2 - 3 & 11,0 & -56,468109 &  78,46811 \\
+2 - 4 & 35,5 & -31,968109 & 102,96811 \\
+2 - 5 & 24,5 & -42,968109 &  91,96811 \\
+3 - 4 & 24,5 & -42,968109 &  91,96811 \\
+3 - 5 & 13,5 & -53,968109 &  80,96811 \\
+4 - 5 & -11,0 & -78,468109 &  56,46811 \\
+\bottomrule
+\end{tabular}
+\caption{Intervalos de Confiança Simultâneos de Bonferroni}
+\label{tab:bonferroni}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\linewidth]{atv3 icsb.png}
+\caption{Intervalos de confiança simultâneos de Bonferroni (\(\alpha = 5\%\)) para as diferenças entre pares de médias.}
+\label{fig:ic_bonferroni}
+\end{figure}
+
+Com a Tabela 7 e a Figura 4, os intervalos para as diferenças \((\mu_1 - \mu_4)\) e \((\mu_1 - \mu_5)\) não contêm o valor zero, 
+reforçando novamente a conclusão do teste ANOVA de que há diferenças significativas 
+entre as médias dos experimentos.
+
+\subsection*{Referência}
+Origem dos dados: \textbf{\textit{A. J. Weekes (1986) A Genstat Primer. London: Edward Arnold.}} \\
+Códigos usados nessa atividade podem ser acessados via link: 
+\\
+\texttt{https://github.com/Marcehlin/Atividades-2026\_1}.
 \end{document}
