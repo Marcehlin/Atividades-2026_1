@@ -272,6 +272,8 @@ Para cada ano adicional de Escolaridade, o log-salário aumenta em média 14%, m
 
 Não tem interpretação para $\beta_0$ pois aparentemente 0 não está no range das covariáveis Experiência e Escolaridade.
 
+---
+
 #### 3.2 Diagnóstico/ Análise de resíduos
 ##### 3.2.1 Linearidade
 
@@ -321,6 +323,7 @@ Valor-p = 0.62, não rejeita $H_0$ (que afirma os dados são normalmente distrib
 (Claro, mesmo se valor-p fosse razoavelmente pequeno, Note que a regressão linear é robusta a desvios de normalidade especialmente para amostras não muito pequenas.)
 
 ---
+
 ##### 3.2.4 Independência
 Como não temos a ordem de coleta, assumimos que são independentes.
 
@@ -334,6 +337,8 @@ Calculuando os valores de alavancagem ($h_{ii}$):
 ![Os h_ii's ](grafico_de_hii_3_3_1.png)
 
 Não tem valores ($h_ii$) maiores que o limiar = 0.28, ou seja ninguém é considerado de alta alavancagem e merece atenção.
+
+---
 
 ##### 3.3.2 Distância de Cook
 ![Distância de Cook](DCook_3_3_2.png)
