@@ -6,7 +6,7 @@ Enunciado: "*O conjunto acima envolve as covariáveis Ano de Experiencia, Ano de
 Setor do Trabalho, Idade do Funcionario e a resposta Log(Salário). Ajuste um
 modelo de regressão considerando as 4 etapas discutidas em sala.*
 
-E a partir dos teste t's de construções, faça teste F parcial. Use type III de teste t em R.
+E a partir dos teste t's de construções, faça teste F parcial. Use type III.
 ## Etapa 0:  Contextualizando
 
 Nesta atividade, será realizada uma análise de um conjunto de dados dito na sala de aula, usando um modelo de regressão linear. A partir desses dados, serão conduzidos: Diagnóstico/Análise de resíduos; Detecção de outliers e pontos influentes; Testes estatísticas; e validação do modelo.
@@ -338,7 +338,19 @@ Como não temos a ordem de coleta, assumimos que são independentes.
 
 #### 3.3 Análise de outliers e pontos influentes
 
-##### 3.3.1 Alavanacagem (leverage)
+##### 3.3.1 Resíduos studentized e alavancagem (os $H_{ii}$)
+
+![Gráfico de residuos studentized.png](3_3_1_residuo_studentized.png)
+
+
+```
+Possíveis outliers (resíduo studentizado > |2|):
+   Experiencia Escolaridade Setor Idade LogSalario
+11          16           16     0    28       8.47
+
+```
+
+Note que a observação 11 foi classificada como outlier pelo resíduo studentizado.
 
 Calculuando os valores de alavancagem ($h_{ii}$):
 ![Os h_ii's ](3_3_1_grafico_de_hii.png)
@@ -469,7 +481,22 @@ O que pode ser feito é antes de ajustar o modelo, separar um conjunto pequeno p
 
 O modelo foi ajustado com as 17 observações separadas, pois já no início com o set.seed(20260513) para reprodutividade, o grupo teste é formado por 7 observações (1;5;8;13;14;18;19), e o grupo treino é o que sobrou.
 
-##### 4.3 Métricas de erro de predição
+#### 4.2 Predição no conjunto de teste.
+
+|  Indice     | Experiencia | Escolaridade | Setor | Idade | LogSalario | Pred_LogSal |
+|---------|--------------|---------------|--------|--------|-------------|--------------|
+| |
+|1 | 5  | 16 | 1 | 38 | 8.874 | 8.625 |
+|5 | 3  | 8  | 1 | 23 | 7.472 | 7.873 |
+|8 | 11 | 9  | 0 | 28 | 8.599 | 8.348 |
+|13 | 3  | 15 | 0 | 42 | 8.632 | 8.445 |
+|14 | 3  | 12  | 0 | 32 | 8.149 | 8.200 |
+|18 | 6  | 11 | 0 | 34 | 9.060 | 8.75 |
+|19 | 4  | 11   | 1  |  39   |  8.156    | 8.167 |
+
+---
+
+#### 4.3 Métricas de erro de predição
 
 São usadas as seugintes métricas: 
 
@@ -489,10 +516,60 @@ MAE_treino: 0.2763
 
 --- 
 
-##### 4.4 Conclusão da etapa 4
+#### 4.4 O que dizer sobre essas métricas
 
 Para avaliar a capacidade preditiva do modelo, a base (24 obs.) é dividida aleatoriamente em treino (17 obs.) e teste (7 obs.), com semente 20260512. 
 
 É feito um ajuste do modelo no treino e obtivemos no teste um $RMSE_{teste}$ de 0.2434, $MAE_{teste}$ de 0.2075  e R² preditivo de 0.9676, enquanto $RMSE_{treino}$ é 0.3426 e $MAE_{treino}$ é 0.2763. 
 
-Apesar do tamanho diminuto do conjunto de teste, o resultado sugere que o modelo é moderadamente útil para novas observações.
+Apesar do tamanho diminuto do conjunto de teste, o resultado acima obtido por divisão treino-teste sugere que o modelo é moderadamente útil para novas observações.
+
+---
+
+#### 4.5 Conclusão da Validação Cruzada (5‑fold)
+
+A validação cruzada com 5 partições foi aplicada ao modelo **LogSalario ~ Experiencia + Escolaridade** utilizando **todos os 24 dados brutos** (sem separação prévia treino/teste). Os resultados médios foram:
+
+- **RMSE = 0,3629**  
+- **R² = 0,7317**  
+- **MAE = 0,2950**
+
+**Comparação com as métricas anteriores (hold‑out):**  
+
+| Métrica | Hold‑out (treino) | Hold‑out (teste) | Validação Cruzada (5‑fold) |
+|---------|------------------|------------------|----------------------------|
+| RMSE    | 0,3426           | 0,2434           | **0,3629**                 |
+| R²      | 0,6071 (ajust=0,551) | 0,9676 (preditivo) | **0,7317**                 |
+| MAE     | 0,2763           | 0,2075           | **0,2950**                 |
+
+**Interpretação:**
+
+1. **O RMSE da validação cruzada (0,3629) é ligeiramente superior ao RMSE de treino (0,3426)**, o que era esperado – a CV avalia o erro em dados não vistos durante o treinamento de cada fold.  
+   - Porém, o RMSE da CV é **maior do que o RMSE obtido no conjunto de teste hold‑out (0,2434)**. Isso indica que a estimativa pontual baseada em uma única divisão treino‑teste (com apenas 7 observações) foi **otimista** (subestimou o erro real). A CV fornece uma métrica mais estável e confiável para uma amostra pequena (n=24).
+
+2. **O R² médio da CV (0,7317)** é **muito menor do que o R² preditivo do hold‑out (0,9676)**, confirmando que o hold‑out superestimou a capacidade preditiva devido ao tamanho reduzido do conjunto de teste.  
+   - O valor 0,7317 está mais próximo do R² ajustado do treino (0,551) e do R² múltiplo (0,6071), sugerindo que o modelo explica cerca de **73% da variabilidade de novos dados**, em média.
+
+3. **O MAE da CV (0,2950)** indica que, em média, a previsão do log‑salário erra por aproximadamente **0,30 unidades**. Na escala original do salário (exponencial), isso representa um erro multiplicativo de cerca de **$exp(0,295) ≈ 1,34$** (34% de erro percentual médio) – um valor moderado, mas que pode ser aprimorado.
+
+**Conclusão final sobre a utilidade do modelo:**
+
+- O modelo com **Experiência e Escolaridade** apresenta **capacidade preditiva razoável**, porém não excelente.  
+- A validação cruzada corrige o viés otimista do hold‑out e mostra que o erro esperado em novas observações é **RMSE ≈ 0,36**, ainda assim inferior ao desvio padrão da resposta **(sd(dados_brutos$LogSalario) ≈ 0,54)**, indicando que o modelo agrega valor em relação a uma previsão ingênua (apenas a média).  
+- Recomenda‑se, em trabalhos futuros, testar a inclusão de termos quadráticos (especialmente para **Experiencia**) ou investigar a interação entre escolaridade e setor, pois o R² da CV de 0,73 deixa margem para melhoria.
+
+**Portanto, o modelo é útil, mas deve ser usado com cautela – especialmente porque a amostra é pequena (24 observações) e os pontos influentes (obs. 4 e 10) podem distorcer as estimativas em novas bases.**
+
+## Adicional:
+
+# Problema no Teste de linearidade: 
+incluir quadrático de Experiencia -----> LogSalario ~ Experiencia + I(Experiencia^2) + Escolaridade
+
+```
+RMSE_teste: 0.117 
+ MAE_teste: 0.0993 
+ R² preditivo: 0.9586 
+RMSE_treino: 0.253 
+ MAE_treino: 0.2112
+```
+![residuo do modelo com termo quadratico.png](Adicional_model_residuo.png)
