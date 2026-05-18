@@ -123,7 +123,6 @@ Não parece ter outliers na covariáveis.
 
 * Os gráficos de dispersão sugerem relação aproximadamente linear entre log-salário e as preditoras, exceto talvez a Idade, que apresentou pouco efeito no log-salário. O boxplot de Setor mostra diferença de medianas, indicando possível efeito.
 
-* Nenhum outlier foi detectado nos boxplots; os valores estão dentro do esperado.
 
 ---
 
@@ -180,9 +179,9 @@ Coefficients:
      7.07122       0.04919       0.08180  
 ```
 
-O método stepwise both com critério AIC partiu do modelo nulo e 
+O método stepwise partiu do modelo nulo e 
 adicionou/removeu termos até encontrar o modelo com menor AIC. O modelo selecionado contém 
-**Escolaridade, Experiencia **. As variável Setor e Idade foram excluídas.
+**Escolaridade, Experiencia**. As variável Setor e Idade foram excluídas.
 
 * Cp de Mallows:
 ```text
@@ -230,7 +229,7 @@ O LASSO reteve Experiencia, Escolaridade, e atribui valores baixos de $\lambda$ 
 
 * A Matriz de Correlação não mostrou correlações elevadas entre preditoras, e os VIFs (todos próximos abaixos de 2) confirmaram ausência de multicolinearidade. 
 
-* Na seleção de variáveis, o método Stepwise com AIC reteve Experiencia, Escolaridade, assim como o Cp de Mallows, e assim como LASSO. 
+* Na seleção de variáveis, o método Stepwise reteve Experiencia, Escolaridade, assim como o Cp de Mallows, e assim como LASSO. 
 
 * Em respeito aos métodos usados (Stepwise, Cp e LASSO), selecionamos para a etapa seguinte **o modelo com Experiencia e Escolaridade**.”
 
@@ -254,7 +253,7 @@ O LASSO reteve Experiencia, Escolaridade, e atribui valores baixos de $\lambda$ 
 
 Pela etapa 2, o modelo é da forma
 
-$ Y = log(salário) = {\beta_0} + {\beta_1}Experiencia  + {\beta_2}Escolaridade + \varepsilon_{ij} $
+$ Y = log(salário) = {\beta}_0 + {\beta}_1\text{Experiencia}  + {\beta}_2\text{Escolaridade} + \varepsilon_{ij} $
 
 ```
 Call:
@@ -360,9 +359,13 @@ Não tem valores ($h_ii$) maiores que o limiar = 0.35, ou seja ninguém é consi
 ---
 
 ##### 3.3.2 Distância de Cook
+Distância de Cook mede influência global, serve para identificar observações que "puxam" ou desviam a linha de regressão.
+
 ![Distância de Cook](3_3_2_DCook.png)
 
-Tem dois valores (observação 4 e 10 do treino) que são maiores que o limiar (4/17 = 0.235 ) sinalizando que são pontos influentes.
+Usando o limiar $F_{n,n-p,0.5}$, nenhuma observação apresentou distância de Cook acima do limite formal,
+sugerindo ausência de pontos altamente influentes no ajuste global
+da regressão.
 
 ---
 
@@ -373,7 +376,13 @@ Tem dois valores (observação 4 e 10 do treino) que são maiores que o limiar (
 
 ![os DFbetas escolaridade](3_3_3_DEBETAS_escolaridade.png)
 
-As observações 4 e 10 do treino possuem a distância de Cook que ultrapassa o limiar, além disso elas apresentam alta alavancagem/leverage e destacam-se em DFFits e em DFBETAS para Experiencia. Devem ser investigados.
+As observações 4 e 10 do treino possuem alta alavancagem, além disso elas se destacam em DFFits e em DFBETAS para Experiencia. Devem ser investigados.
+
+| Estimativa dos $\beta$ | Ambos | Sem4 | Sem10 | Sem ambos |
+|-----------|--------|--------|---------|------------|
+| (Intercept) | 7.07122157 | 6.9309315 | 6.72441238 | 6.6445531 |
+| Experiencia | 0.04919066 | 0.0641627 | 0.03147366 | 0.0476804 |
+| Escolaridade | 0.08179765 | 0.0876268 | 0.11694960 | 0.1173557 |
 
 ---
 
@@ -496,31 +505,32 @@ O modelo foi ajustado com as 17 observações separadas, pois já no início com
 
 ---
 
-#### 4.3 Métricas de erro de predição
+##### 4.3 Métricas de erro de predição
 
 São usadas as seugintes métricas: 
 
 * RMSE (raiz do erro quadrático médio)
 * MAE (erro absoluto médio)
+* MAPE (erro absoluto percentual médio)
 * $R^2$ (Coeficiente de determinação preditivo)
 
 ```
 RMSE_teste: 0.2434 
-MAE_teste: 0.2075 
-R² preditivo: 0.9676 
+ MAE_teste: 0.2075 
+ MAPE: 0.0248 
+ R² preditivo: 0.9676 
 
 RMSE_treino: 0.3426 
 MAE_treino: 0.2763 
 
 ```
 
---- 
-
 #### 4.4 O que dizer sobre essas métricas
 
 Para avaliar a capacidade preditiva do modelo, a base (24 obs.) é dividida aleatoriamente em treino (17 obs.) e teste (7 obs.), com semente 20260512. 
 
-É feito um ajuste do modelo no treino e obtivemos no teste um $RMSE_{teste}$ de 0.2434, $MAE_{teste}$ de 0.2075  e R² preditivo de 0.9676, enquanto $RMSE_{treino}$ é 0.3426 e $MAE_{treino}$ é 0.2763. 
+É feito um ajuste do modelo no treino e obtivemos no teste um $RMSE_{teste}$ de 0.2434, $MAE_{teste}$ de 0.2075  e R² preditivo de 0.9676, enquanto $RMSE_{treino}$ é 0.3426 e $MAE_{treino}$ é 0.2763. E temos um MAPE de 0.0248 que significa em média o modelo erra em 2.48% do valor real.
+
 
 Apesar do tamanho diminuto do conjunto de teste, o resultado acima obtido por divisão treino-teste sugere que o modelo é moderadamente útil para novas observações.
 
@@ -568,8 +578,9 @@ incluir quadrático de Experiencia -----> LogSalario ~ Experiencia + I(Experienc
 ```
 RMSE_teste: 0.117 
  MAE_teste: 0.0993 
+ MAPE: 0.0118 
  R² preditivo: 0.9586 
 RMSE_treino: 0.253 
- MAE_treino: 0.2112
+ MAE_treino: 0.2112 
 ```
 ![residuo do modelo com termo quadratico.png](Adicional_model_residuo.png)
