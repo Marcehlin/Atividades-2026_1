@@ -1,4 +1,4 @@
-# Trabalho/Atividade 5 em grupo de Regressão
+# Trabalho/Atividade 4 em grupo de Regressão
 
 ## Integrantes do Grupo:
 - Matheus Brito
