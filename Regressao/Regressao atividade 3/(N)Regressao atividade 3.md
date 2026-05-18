@@ -104,15 +104,18 @@ As variáveis Experiência, Escolaridade, e Idade apresentam comportamento linea
 
 ---
 
-#### 1.4 Verificando outliers univariados
+#### 1.4 Análise descritiva das covariáveis
 
-Pois outliers na resposta ou nas preditoras podem distorcer a análise:
-
-![os boxplots para variaveis quantitativas ](1_4_boxplot.png)
-
-Não parece ter outliers na covariáveis.
+| Variável | Min. | 1st Qu. | Median | Mean | 3rd Qu. | Max. |
+|-----------|------|----------|---------|------|----------|------|
+| Experiencia | 2.000 | 4.000 | 7.000 | 7.941 | 11.000 | 18.000 |
+| Escolaridade | 8.00 | 10.00 | 13.00 | 12.65 | 14.00 | 18.00 |
+| Setor | 0.0000 | 0.0000 | 1.0000 | 0.5294 | 1.0000 | 1.0000 |
+| Idade | 21.00 | 23.00 | 31.00 | 30.82 | 38.00 | 42.00 |
+| LogSalario | 7.392 | 8.033 | 8.470 | 8.496 | 8.970 | 9.330 |
 
 ---
+
 #### 1.5 Concluindo etapa 1
 
 * A base de treino tem 17 observações.
@@ -583,4 +586,3 @@ RMSE_teste: 0.117
 RMSE_treino: 0.253 
  MAE_treino: 0.2112 
 ```
-![residuo do modelo com termo quadratico.png](Adicional_model_residuo.png)
