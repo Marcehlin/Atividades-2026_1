@@ -1,0 +1,1057 @@
+\documentclass[12pt, a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{csquotes}
+\usepackage[top=3cm, bottom=2cm, left=3cm, right=2cm]{geometry}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath, amssymb, mathtools}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% ── Pacotes ────────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{caption}
+\usepackage{siunitx}   % alinhamento numérico nas tabelas
+ 
+\geometry{margin=2.5cm}
+ 
+% ── Cores e caixas ─────────────────────────────────────────────────────────────
+\definecolor{azul}{RGB}{0,70,127}
+\definecolor{fundo}{RGB}{240,247,255}
+\tcbuselibrary{skins, breakable}
+\newtcolorbox{modelbox}{
+  colback=fundo, colframe=azul,
+  fonttitle=\bfseries\color{white}, coltitle=white,
+  title=Especificação do Modelo,
+  breakable, enhanced
+}
+ 
+% ── Macros ─────────────────────────────────────────────────────────────────────
+\newcommand{\T}{{\top}}
+\newcommand{\mY}{\mathbf{Y}}
+\newcommand{\mb}{\boldsymbol{\beta}}
+\newcommand{\beps}{\boldsymbol{\varepsilon}}
+\DeclareMathOperator{\GI}{GI}
+\DeclareMathOperator{\Normal}{\mathcal{N}}
+\newcommand{\sig}{\sigma^{2}_{\varepsilon}}
+
+
+\usepackage{listings}
+\lstset{
+  backgroundcolor=\color{cinzaclaro},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  language=R
+}
+
+\usepackage[colorlinks=true, linkcolor=azulescuro,
+            citecolor=azulescuro, urlcolor=azulescuro]{hyperref}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Regressão Linear com enfoque Bayesiano}
+\fancyhead[R]{\small \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{enumitem}
+\usepackage{parskip}
+
+\usepackage{graphicx} % Required for inserting images
+
+\begin{document}
+% ------- CAPA -------
+\begin{titlepage}
+  \centering
+  \vspace*{1cm}
+
+  {\large Disciplina: Estatística Bayesiana}
+
+  \vspace{2.5cm}
+
+  \rule{\linewidth}{0.5pt}\\[0.4cm]
+  {\LARGE \textbf{Regressão Linear com enfoque Bayesiano}\\[0.3cm]
+  \large \textit{Combined Cycle Power Plant}}
+
+  \rule{\linewidth}{0.5pt}
+
+  \vspace{2cm}
+
+  {\large \textbf{Autores:}}\\[0.3cm]
+  {\large }\\[0.2cm]
+  {\large }\\[0.2cm]
+  {\large }\\[0.3cm]
+
+  \vfill
+
+  {\large SP}\\[0.2cm]
+  {\large \today}
+\end{titlepage}
+
+
+% =================== SUMÁRIO ===================
+\tableofcontents
+\newpage
+
+\section*{Introdução}
+\addcontentsline{toc}{section}{Introdução}
+
+Neste trabalho, será utilizada uma abordagem de regressão linear bayesiana para modelar a relação entre variáveis ambientais e a produção líquida horária de energia elétrica, medida em megawatts (MW). Para isso, emprega-se o conjunto de dados \textit{Combined Cycle Power Plant}, disponibilizado pela \textit{UCI Machine Learning Repository}. O banco contém (n=9568) observações coletadas ao longo de seis anos (2006--2011), durante períodos em que a usina operou sob carga total. As observações correspondem a médias horárias obtidas por sensores instalados no sistema de geração.
+
+A variável resposta considerada neste estudo é a potência elétrica líquida produzida (\texttt{PE}), expressa em MW. Como variáveis explicativas são utilizadas quatro medidas ambientais contínuas: temperatura ambiente (\texttt{AT}), vácuo de exaustão (\texttt{V}), pressão atmosférica (\texttt{AP}) e umidade relativa do ar (\texttt{RH}). Essas variáveis representam condições externas que afetam diretamente o funcionamento das turbinas e, consequentemente, o desempenho energético do sistema.
+
+Diferentemente da regressão linear sob a abordagem clássica, a inferência bayesiana trata os parâmetros do modelo como variáveis aleatórias e incorpora conhecimento prévio por meio de distribuições \textit{a priori}. Nesse contexto, o modelo é especificado pela combinação entre a função de verossimilhança e distribuições prévias para os parâmetros desconhecidos, resultando em distribuições posteriores obtidas pela aplicação do Teorema de Bayes.
+
+Especificamente, será adotado o modelo de regressão linear gaussiano com prior conjugado \textit{Normal Gama Inversa} para o par $(\boldsymbol{\beta},\sigma^2)$. Essa escolha permite derivação analítica da distribuição posterior conjunta e fornece interpretação probabilística direta sobre os coeficientes de regressão e sobre a variabilidade residual do processo.
+
+% Ao final, o modelo será utilizado para investigar como as condições ambientais estão associadas à produção de energia elétrica e para avaliar o desempenho preditivo da regressão linear sob uma perspectiva bayesiana.
+
+
+\section*{Conceito teórico: Regressão Linear Bayesiana com Prior Normal–Gama Inversa}
+\addcontentsline{toc}{section}{Conceito teórico: Regressão Linear Bayesiana com Prior Normal–Gama Inversa}
+
+\subsection*{1. Modelo Generativo}
+\addcontentsline{toc}{subsection}{1. Modelo Generativo}
+
+Considere o modelo de regressão linear clássico:
+\[ \mathbf{Y} = X\boldsymbol{\beta} + \boldsymbol{\varepsilon} \]
+
+onde: $\mathbf{Y}\in\mathbb{R}^{n}$, $X\in\mathbb{R}^{n\times p}$, $\boldsymbol{\beta}\in\mathbb{R}^{p}$ e $\boldsymbol{\varepsilon}\sim\mathcal{N}_n(\mathbf{0},\sigma^2I_n)$.
+
+Logo,
+\[ \mathbf{Y}\mid\boldsymbol{\beta},\sigma^2 \sim \mathcal{N}_n(X\boldsymbol{\beta},\sigma^2I_n). \]
+
+A densidade da verossimilhança é:
+\[ p(\mathbf{Y}\mid\boldsymbol{\beta},\sigma^2) = (2\pi\sigma^2)^{-n/2} \exp\left\{ -\frac{1}{2\sigma^2} (\mathbf{Y}-X\boldsymbol{\beta})^T (\mathbf{Y}-X\boldsymbol{\beta}) \right\}. \]
+
+Ignorando constantes:
+\[ L(\boldsymbol{\beta},\sigma^2) \propto (\sigma^2)^{-n/2} \exp \left( -\frac{(\mathbf{Y}-X\boldsymbol{\beta})^T (\mathbf{Y}-X\boldsymbol{\beta})}{2\sigma^2} \right). \]
+
+\vspace{0.4cm}
+
+\subsection*{2. Especificação Bayesiana}
+\addcontentsline{toc}{subsection}{2. Especificação Bayesiana}
+
+Escolhemos o prior conjugado:
+\[ \sigma^2 \sim IG(a_0,b_0), \] $a_0>0$ e $b_0>0$;
+
+com densidade:
+\[ p(\sigma^2) = \frac{b_0^{a_0}}{\Gamma(a_0)} (\sigma^2)^{-a_0-1} \exp\left( -\frac{b_0}{\sigma^2} \right). \]
+
+Condicionalmente a $\sigma^2$:
+
+\[
+\boldsymbol{\beta}\mid\sigma^2
+\sim
+\mathcal{N}_p
+\left(
+\boldsymbol{\mu}_0,
+\sigma^2\Lambda_0^{-1}
+\right),
+\]
+
+onde $\Lambda_0\in\mathbb{R}^{p\times p}$ é uma matriz simétrica
+\[
+\Lambda_0=\Lambda_0^{\top}
+\]
+e definida positiva, isto é,
+
+\[
+\mathbf{x}^{\top}\Lambda_0\mathbf{x}>0,
+\qquad
+\forall\,\mathbf{x}\neq\mathbf{0}.
+\]
+
+Logo:
+\[ p(\boldsymbol{\beta}\mid\sigma^2) = \frac{|\Lambda_0|^{1/2}}{(2\pi\sigma^2)^{p/2}} \exp \left[ -\frac{(\boldsymbol{\beta}-\boldsymbol{\mu}_0)^T \Lambda_0 (\boldsymbol{\beta}-\boldsymbol{\mu}_0)}{2\sigma^2} \right]. \]
+
+Assim,
+\[ (\boldsymbol{\beta},\sigma^2) \sim NIG(\boldsymbol{\mu}_0,\Lambda_0,a_0,b_0). \]
+
+\vspace{0.4cm}
+
+\subsection*{3. Aplicação do Teorema de Bayes}
+\addcontentsline{toc}{subsection}{3. Aplicação do Teorema de Bayes}
+
+Pelo Teorema de Bayes:
+
+\[
+p(\boldsymbol{\beta},\sigma^2\mid\mathbf Y)
+=
+\frac{
+p(\mathbf Y\mid\boldsymbol{\beta},\sigma^2)
+p(\boldsymbol{\beta},\sigma^2)
+}{
+p(\mathbf Y)
+}
+\]
+
+Como \(p(\mathbf Y)\) não depende de
+\(\boldsymbol{\beta}\) nem de \(\sigma^2\), usamos proporcionalidade:
+
+\[
+p(\boldsymbol{\beta},\sigma^2\mid\mathbf Y)
+\propto
+p(\mathbf Y\mid\boldsymbol{\beta},\sigma^2)
+p(\boldsymbol{\beta},\sigma^2)
+\]
+
+Agora expandimos cada termo.
+
+\vspace{0.3cm}
+
+\textbf{Passo 1 — Escrever a verossimilhança}
+
+Do modelo:
+
+\[
+\mathbf Y\mid\boldsymbol\beta,\sigma^2
+\sim
+\mathcal N_n
+(X\boldsymbol\beta,\sigma^2I)
+\]
+
+a densidade é:
+
+\[
+p(\mathbf Y\mid\boldsymbol\beta,\sigma^2)
+=
+\frac1{(2\pi\sigma^2)^{n/2}}
+\exp
+\left(
+-
+\frac{
+(\mathbf Y-X\boldsymbol\beta)^T
+(\mathbf Y-X\boldsymbol\beta)
+}{
+2\sigma^2
+}
+\right)
+\]
+
+Ignorando constantes:
+
+\[
+p(\mathbf Y\mid\boldsymbol\beta,\sigma^2)
+\propto
+(\sigma^2)^{-n/2}
+\exp
+\left(
+-
+\frac{
+(\mathbf Y-X\boldsymbol\beta)^T
+(\mathbf Y-X\boldsymbol\beta)
+}{
+2\sigma^2
+}
+\right)
+\]
+
+\vspace{0.3cm}
+
+\textbf{Passo 2 — Escrever o prior conjunto}
+
+Como:
+
+\[
+p(\boldsymbol\beta,\sigma^2)
+=
+p(\boldsymbol\beta\mid\sigma^2)
+p(\sigma^2)
+\]
+
+escrevemos cada densidade.
+
+Para a variância:
+
+\[
+\sigma^2\sim IG(a_0,b_0)
+\]
+
+temos:
+
+\[
+p(\sigma^2)
+=
+\frac{b_0^{a_0}}
+{\Gamma(a_0)}
+(\sigma^2)^{-a_0-1}
+\exp
+\left(
+-\frac{b_0}{\sigma^2}
+\right)
+\]
+
+Ignorando constantes:
+
+\[
+p(\sigma^2)
+\propto
+(\sigma^2)^{-a_0-1}
+\exp
+\left(
+-\frac{b_0}{\sigma^2}
+\right)
+\]
+
+Agora:
+
+\[
+\boldsymbol\beta\mid\sigma^2
+\sim
+\mathcal N_p
+(
+\mu_0,
+\sigma^2\Lambda_0^{-1}
+)
+\]
+
+logo:
+
+\[
+p(\boldsymbol\beta\mid\sigma^2)
+=
+\frac{
+|\Lambda_0|^{1/2}
+}{
+(2\pi\sigma^2)^{p/2}
+}
+\exp
+\left(
+-
+\frac{
+(\boldsymbol\beta-\mu_0)^T
+\Lambda_0
+(\boldsymbol\beta-\mu_0)
+}{
+2\sigma^2
+}
+\right)
+\]
+
+Ignorando constantes:
+
+\[
+p(\boldsymbol\beta\mid\sigma^2)
+\propto
+(\sigma^2)^{-p/2}
+\exp
+\left(
+-
+\frac{
+(\boldsymbol\beta-\mu_0)^T
+\Lambda_0
+(\boldsymbol\beta-\mu_0)
+}{
+2\sigma^2
+}
+\right)
+\]
+
+Portanto:
+
+\[
+p(\boldsymbol\beta,\sigma^2)
+\propto
+(\sigma^2)^{-a_0-1-p/2}
+\exp
+\left[
+-
+\frac1{\sigma^2}
+\left(
+b_0+
+\frac12
+(\boldsymbol\beta-\mu_0)^T
+\Lambda_0
+(\boldsymbol\beta-\mu_0)
+\right)
+\right]
+\]
+
+\vspace{0.3cm}
+
+\textbf{Passo 3 — Multiplicar prior × verossimilhança}
+
+Aplicando:
+
+\[
+p(\boldsymbol\beta,\sigma^2\mid Y)
+\propto
+p(Y\mid\boldsymbol\beta,\sigma^2)
+p(\boldsymbol\beta,\sigma^2)
+\]
+
+substituímos:
+
+\[
+\propto
+(\sigma^2)^{-n/2}
+\exp
+\left(
+-
+\frac{
+(Y-X\beta)^T(Y-X\beta)
+}{
+2\sigma^2
+}
+\right)
+\]
+
+\[
+\times
+(\sigma^2)^{-a_0-1-p/2}
+\exp
+\left[
+-
+\frac1{\sigma^2}
+\left(
+b_0+
+\frac12
+(\beta-\mu_0)^T
+\Lambda_0
+(\beta-\mu_0)
+\right)
+\right]
+\]
+
+Agrupando potências:
+
+\[
+(\sigma^2)^{-n/2}
+(\sigma^2)^{-a_0-1-p/2}
+=
+(\sigma^2)^{-a_0-1-n/2-p/2}
+\]
+
+obtemos:
+
+\[
+p(\beta,\sigma^2\mid Y)
+\propto
+(\sigma^2)^{-a_0-1-n/2-p/2}
+\]
+
+\[
+\times
+\exp
+\left[
+-
+\frac1{\sigma^2}
+\left(
+b_0
++
+\frac12
+(Y-X\beta)^T(Y-X\beta)
++
+\frac12
+(\beta-\mu_0)^T
+\Lambda_0
+(\beta-\mu_0)
+\right)
+\right]
+\]
+
+que é exatamente a forma desejada.
+
+\vspace{0.4cm}
+
+\subsection*{4. Completando o Quadrado}
+\addcontentsline{toc}{subsection}{4. Completando o Quadrado}
+
+Partimos do termo que aparece dentro da exponencial da posterior:
+
+\[
+(\mathbf Y-X\boldsymbol\beta)^T
+(\mathbf Y-X\boldsymbol\beta)
++
+(\boldsymbol\beta-\boldsymbol\mu_0)^T
+\Lambda_0
+(\boldsymbol\beta-\boldsymbol\mu_0)
+\]
+
+Nosso objetivo é reescrever essa expressão em função de
+
+\[
+(\boldsymbol\beta-\boldsymbol\mu_n)^T
+\Lambda_n
+(\boldsymbol\beta-\boldsymbol\mu_n).
+\]
+
+\vspace{0.3cm}
+
+\textbf{Passo 1 — Expandir o primeiro termo}
+
+Expandimos:
+
+\[
+(\mathbf Y-X\boldsymbol\beta)^T
+(\mathbf Y-X\boldsymbol\beta)
+\]
+
+Distribuindo:
+
+\[
+=
+(\mathbf Y^T-\boldsymbol\beta^TX^T)
+(\mathbf Y-X\boldsymbol\beta)
+\]
+
+Multiplicando termo a termo:
+
+\[
+=
+\mathbf Y^T\mathbf Y
+-
+\mathbf Y^TX\boldsymbol\beta
+-
+\boldsymbol\beta^TX^T\mathbf Y
++
+\boldsymbol\beta^TX^TX\boldsymbol\beta
+\]
+
+Como:
+
+\[
+\mathbf Y^TX\boldsymbol\beta
+=
+\boldsymbol\beta^TX^T\mathbf Y
+\]
+
+(observação: ambos são escalares),
+
+obtemos:
+
+\[
+(\mathbf Y-X\boldsymbol\beta)^T
+(\mathbf Y-X\boldsymbol\beta)
+=
+\mathbf Y^T\mathbf Y
+-
+2\boldsymbol\beta^TX^T\mathbf Y
++
+\boldsymbol\beta^TX^TX\boldsymbol\beta
+\]
+
+\vspace{0.4cm}
+
+\textbf{Passo 2 — Expandir o segundo termo}
+
+Agora expandimos:
+
+\[
+(\boldsymbol\beta-\boldsymbol\mu_0)^T
+\Lambda_0
+(\boldsymbol\beta-\boldsymbol\mu_0)
+\]
+
+Distribuindo:
+
+\[
+=
+(\boldsymbol\beta^T-\boldsymbol\mu_0^T)
+\Lambda_0
+(\boldsymbol\beta-\boldsymbol\mu_0)
+\]
+
+Multiplicando:
+
+\[
+=
+\boldsymbol\beta^T\Lambda_0\boldsymbol\beta
+-
+\boldsymbol\beta^T\Lambda_0\boldsymbol\mu_0
+-
+\boldsymbol\mu_0^T\Lambda_0\boldsymbol\beta
++
+\boldsymbol\mu_0^T\Lambda_0\boldsymbol\mu_0
+\]
+
+Como:
+
+\[
+\Lambda_0=\Lambda_0^T
+\]
+
+segue que:
+
+\[
+\boldsymbol\mu_0^T\Lambda_0\boldsymbol\beta
+=
+\boldsymbol\beta^T\Lambda_0\boldsymbol\mu_0
+\]
+
+Logo:
+
+\[
+(\boldsymbol\beta-\boldsymbol\mu_0)^T
+\Lambda_0
+(\boldsymbol\beta-\boldsymbol\mu_0)
+=
+\boldsymbol\beta^T\Lambda_0\boldsymbol\beta
+-
+2\boldsymbol\beta^T\Lambda_0\boldsymbol\mu_0
++
+\boldsymbol\mu_0^T\Lambda_0\boldsymbol\mu_0
+\]
+
+\vspace{0.4cm}
+
+\textbf{Passo 3 — Somar os dois desenvolvimentos}
+
+Somando:
+
+\[
+\mathbf Y^T\mathbf Y
+-
+2\boldsymbol\beta^TX^T\mathbf Y
++
+\boldsymbol\beta^TX^TX\boldsymbol\beta
+\]
+
+\[
++
+\boldsymbol\beta^T\Lambda_0\boldsymbol\beta
+-
+2\boldsymbol\beta^T\Lambda_0\boldsymbol\mu_0
++
+\boldsymbol\mu_0^T\Lambda_0\boldsymbol\mu_0
+\]
+
+Agrupando os termos quadráticos:
+
+\[
+=
+\boldsymbol\beta^T
+(X^TX+\Lambda_0)
+\boldsymbol\beta
+\]
+
+Agrupando os termos lineares:
+
+\[
+-
+2\boldsymbol\beta^T
+(X^T\mathbf Y+\Lambda_0\mu_0)
+\]
+
+Mantendo constantes:
+
+\[
++
+\mathbf Y^T\mathbf Y
++
+\mu_0^T\Lambda_0\mu_0
+\]
+
+Portanto:
+
+\[
+=
+\boldsymbol\beta^T
+(X^TX+\Lambda_0)
+\boldsymbol\beta
+-
+2\boldsymbol\beta^T
+(X^T\mathbf Y+\Lambda_0\mu_0)
++
+\mathbf Y^T\mathbf Y
++
+\mu_0^T\Lambda_0\mu_0
+\]
+
+\vspace{0.4cm}
+
+\textbf{Passo 4 — Definir os parâmetros posteriores}
+
+Definimos:
+
+\[
+\boxed{
+\Lambda_n=X^TX+\Lambda_0
+}
+\]
+
+e
+
+\[
+\boxed{
+\Lambda_n\mu_n
+=
+X^T\mathbf Y+\Lambda_0\mu_0
+}
+\]
+
+equivalentemente:
+
+\[
+\boxed{
+\mu_n
+=
+\Lambda_n^{-1}
+(X^T\mathbf Y+\Lambda_0\mu_0)
+}
+\]
+
+Substituindo:
+
+\[
+=
+\boldsymbol\beta^T
+\Lambda_n
+\boldsymbol\beta
+-
+2\boldsymbol\beta^T
+\Lambda_n\mu_n
++
+\mathbf Y^T\mathbf Y
++
+\mu_0^T\Lambda_0\mu_0
+\]
+
+\vspace{0.4cm}
+
+\textbf{Passo 5 — Completar o quadrado}
+
+Usamos a identidade matricial:
+
+\[
+(\beta-\mu)^TA(\beta-\mu)
+=
+\beta^TA\beta
+-
+2\beta^TA\mu
++
+\mu^TA\mu
+\]
+
+Logo:
+
+\[
+\beta^T\Lambda_n\beta
+-
+2\beta^T\Lambda_n\mu_n
+\]
+
+\[
+=
+(\beta-\mu_n)^T
+\Lambda_n
+(\beta-\mu_n)
+-
+\mu_n^T\Lambda_n\mu_n
+\]
+
+Substituindo:
+
+\[
+=
+(\beta-\mu_n)^T
+\Lambda_n
+(\beta-\mu_n)
++
+\mathbf Y^T\mathbf Y
++
+\mu_0^T\Lambda_0\mu_0
+-
+\mu_n^T\Lambda_n\mu_n
+\]
+
+que é exatamente o resultado desejado.
+
+\vspace{0.4cm}
+
+\subsection*{5. Atualização dos Hiperparâmetros}
+\addcontentsline{toc}{subsection}{5. Atualização dos Hiperparâmetros}
+
+Os parâmetros posteriores tornam-se:
+\[ \boxed{a_n = a_0+\frac{n}{2}} \]
+\[ \boxed{b_n = b_0 + \frac{1}{2} \left( \mathbf{Y}^T\mathbf{Y} + \boldsymbol{\mu}_0^T\Lambda_0\boldsymbol{\mu}_0 - \boldsymbol{\mu}_n^T\Lambda_n\boldsymbol{\mu}_n \right)} \]
+
+\vspace{0.4cm}
+
+\subsection*{6. Distribuição Posterior Conjunta}
+\addcontentsline{toc}{subsection}{6. Distribuição Posterior Conjunta}
+
+Concluímos:
+\[ (\boldsymbol{\beta},\sigma^2\mid \mathbf{Y}) \sim NIG(\boldsymbol{\mu}_n,\Lambda_n,a_n,b_n). \]
+
+Equivalente à fatoração:
+\[ \sigma^2\mid \mathbf{Y} \sim IG(a_n,b_n) \]
+\[ \boldsymbol{\beta}\mid\sigma^2,\mathbf{Y} \sim \mathcal{N}_p ( \boldsymbol{\mu}_n, \sigma^2\Lambda_n^{-1} ). \]
+
+\vspace{0.4cm}
+% \subsection{7. Distribuição Preditiva Posterior}
+
+%Para nova observação:
+
+%[x_\star^T\beta+\varepsilon_\star.]
+
+%A distribuição preditiva é:
+
+%\intp(Y_\star\mid\beta,\sigma^2)p(\beta,\sigma^2\mid Y)d\beta d\sigma^2.]
+
+%Resultado:
+
+%[\boxed{Y_\star\mid Y\simt_{2a_n}\left(x_\star^T\mu_n,\frac{b_n}{a_n}\left(1+x_\star^T\Lambda_n^{-1}x_\star\right)\right)}\]
+
+\subsection*{7. Interpretação Bayesiana}
+\addcontentsline{toc}{subsection}{7. Interpretação Bayesiana}
+
+Os hiperparâmetros possuem interpretação direta:
+\[ \boldsymbol{\mu}_0 \implies \text{média a priori dos coeficientes} \]
+\[ \Lambda_0 \implies \text{precisão a priori} \]
+\[ a_0, b_0 \implies \text{informação prévia sobre variância}. \]
+
+A atualização:
+\[ \boldsymbol{\mu}_n = (X^TX+\Lambda_0)^{-1} (X^T\mathbf{Y}+\Lambda_0\boldsymbol{\mu}_0) \]
+mostra explicitamente que a posterior é uma média ponderada entre os \text{dados} e o \text{conhecimento prévio}.
+
+No limite em que $\Lambda_0 \to 0$ (prior não-informativo), recupera-se a inferência clássica de mínimos quadrados ordinários.
+
+\section*{Dados}
+\addcontentsline{toc}{section}{Dados}
+
+O conjunto contém $n = 9\,568$ observações e $p = 5$ variáveis (4 covariáveis
+e 1 resposta), todas contínuas. Nenhum observação apresenta dados faltantes. 
+ 
+A Tabela~\ref{tab:amostra} exibe as 10 primeiras e as 10 últimas observações do
+conjunto de dados, na ordem original disponibilizada pelo UCI.
+ 
+\begin{table}[ht]
+\centering
+\caption{Primeiras e últimas 10 observações do conjunto CCPP.}
+\label{tab:amostra}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{cS[table-format=2.2]S[table-format=2.2]
+                  S[table-format=4.2]S[table-format=3.2]S[table-format=3.2]}
+  \toprule
+  \textbf{Obs.} & \textbf{AT (°C)} & \textbf{V (cm Hg)}
+                & \textbf{AP (mbar)} & \textbf{RH (\%)} & \textbf{PE (MW)} \\
+  \midrule
+  % ── Primeiras 10 ──────────────────────────────────────────────────────────
+  1    & 14.96 & 41.76 & 1024.07 & 73.17 & 463.26 \\
+  2    & 25.18 & 62.96 & 1020.04 & 59.08 & 444.37 \\
+  3    &  5.11 & 39.40 & 1012.16 & 92.14 & 488.56 \\
+  4    & 20.86 & 57.32 & 1010.24 & 76.64 & 446.48 \\
+  5    & 10.82 & 37.50 & 1009.23 & 96.62 & 473.90 \\
+  6    & 26.27 & 59.44 & 1012.23 & 58.77 & 443.67 \\
+  7    & 15.89 & 43.96 & 1014.02 & 75.24 & 467.35 \\
+  8    &  9.48 & 44.71 & 1019.12 & 66.43 & 478.42 \\
+  9    & 14.64 & 45.00 & 1021.78 & 41.25 & 475.98 \\
+  10   & 11.74 & 43.56 & 1015.14 & 70.72 & 477.50 \\
+  \midrule[\heavyrulewidth]
+  \multicolumn{6}{c}{\textit{(...)}} \\
+  \midrule[\heavyrulewidth]
+  % ── Últimas 10 ────────────────────────────────────────────────────────────
+  9559 & 28.37 & 69.70 & 1007.34 & 77.60 & 432.87 \\
+  9560 & 21.57 & 58.39 & 1016.26 & 77.60 & 445.11 \\
+  9561 & 12.07 & 45.86 & 1014.19 & 78.43 & 468.49 \\
+  9562 & 22.31 & 60.83 & 1013.20 & 72.60 & 444.82 \\
+  9563 & 23.16 & 65.50 & 1008.74 & 60.05 & 441.81 \\
+  9564 & 18.67 & 52.88 & 1005.71 & 89.25 & 453.68 \\
+  9565 & 24.68 & 67.63 & 1010.85 & 72.44 & 435.16 \\
+  9566 & 23.93 & 63.65 & 1011.41 & 71.38 & 441.17 \\
+  9567 & 21.01 & 56.63 & 1014.68 & 71.72 & 448.14 \\
+  9568 & 22.39 & 68.05 & 1008.08 & 81.23 & 436.54 \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\section*{Análise Descritiva}
+\addcontentsline{toc}{section}{Análise Descritiva}
+
+\section*{Modelo de Regressão Linear}
+\addcontentsline{toc}{section}{Modelo de Regressão Linear}
+
+\subsection*{Notação e Definições}
+\addcontentsline{toc}{subsection}{Notação e Definições}
+ 
+Seja $i = 1, 2, \ldots, n$ o índice da observação, com $n = 9\,568$.
+Definimos as seguintes quantidades para a $i$-ésima observação:
+ 
+\begin{align*}
+  Y_i    &\;:\; \text{produção líquida de energia (MW)}, \\
+  x_{i1} &\;:\; \text{temperatura ambiente } AT_i \text{ (°C)}, \\
+  x_{i2} &\;:\; \text{vácuo de exaustão } V_i \text{ (cm Hg)}, \\
+  x_{i3} &\;:\; \text{pressão ambiente } AP_i \text{ (mbar)}, \\
+  x_{i4} &\;:\; \text{umidade relativa } RH_i \text{ (\%)}.
+\end{align*}
+ 
+\subsection*{Especificação Escalar}
+\addcontentsline{toc}{subsection}{Especificação Escalar}
+ 
+ 
+O modelo de regressão linear múltipla para a $i$-ésima observação é:
+\begin{equation}
+  Y_i \;=\; \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2}
+           + \beta_3 x_{i3} + \beta_4 x_{i4} + \varepsilon_i,
+  \qquad i = 1, \ldots, n,
+  \label{eq:modelo_escalar}
+\end{equation}
+onde:
+ 
+\begin{itemize}
+  \item $\beta_0 \in \mathbb{R}$ é o \textbf{intercepto} --- produção esperada
+        quando todas as covariáveis são zero;
+  \item $\beta_1 \in \mathbb{R}$ é o coeficiente de AT --- variação esperada em
+        PE para cada aumento de $1\,\text{°C}$ em temperatura;
+  \item $\beta_2 \in \mathbb{R}$ é o coeficiente de V --- variação esperada em
+        PE para cada aumento de $1\,\text{cm\,Hg}$ no vácuo;
+  \item $\beta_3 \in \mathbb{R}$ é o coeficiente de AP --- variação esperada em
+        PE para cada aumento de $1\,\text{mbar}$ na pressão;
+  \item $\beta_4 \in \mathbb{R}$ é o coeficiente de RH --- variação esperada em
+        PE para cada aumento de $1\,\text{pp}$ na umidade relativa;
+  \item $\varepsilon_i$ é o \textbf{erro aleatório} da $i$-ésima observação.
+\end{itemize}
+ 
+\subsection*{Especificação Matricial}
+\addcontentsline{toc}{subsection}{Especificação Matricial}
+ 
+Definindo os vetores e matrizes:
+\begin{align*}
+  \mY_{n \times 1}   &= (Y_1, Y_2, \ldots, Y_n)\T, \\[4pt]
+  X_{n \times p}     &= \begin{pmatrix}
+                          1 & x_{11} & x_{12} & x_{13} & x_{14} \\
+                          1 & x_{21} & x_{22} & x_{23} & x_{24} \\
+                          \vdots & \vdots & \vdots & \vdots & \vdots \\
+                          1 & x_{n1} & x_{n2} & x_{n3} & x_{n4}
+                        \end{pmatrix}, \\[4pt]
+  \mb_{p \times 1}   &= (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4)\T, \\[4pt]
+  \beps_{n \times 1} &= (\varepsilon_1, \varepsilon_2, \ldots, \varepsilon_n)\T,
+\end{align*}
+com $p = 5$ (intercepto + 4 covariáveis), o modelo~\eqref{eq:modelo_escalar}
+escreve-se compactamente como:
+\begin{equation}
+  \mY \;=\; X\mb + \beps.
+  \label{eq:modelo_matricial}
+\end{equation}
+ 
+\subsection*{Distribuição dos Erros e Verossimilhança}
+\addcontentsline{toc}{subsection}{Distribuição dos Erros e Verossimilhança}
+ 
+Assumindo erros independentes e normalmente distribuídos:
+\[
+  \beps \sim \Normal_{n}(\mathbf{0}_n,\, \sig I_n),
+  \qquad \sig > 0,
+\]
+a distribuição condicional de $\mY$ é:
+\begin{equation}
+  \mY \mid \mb, \sig, X \;\sim\; \Normal_{n}(X\mb,\, \sig I_n),
+  \label{eq:likelihood_dist}
+\end{equation}
+com verossimilhança:
+\begin{equation}
+  L(\mb, \sig) \;\propto\;
+  (\sig)^{-n/2}
+  \exp\!\left(
+    -\frac{(\mY - X\mb)\T(\mY - X\mb)}{2\sig}
+  \right).
+  \label{eq:vero}
+\end{equation}
+
+\newpage
+\subsection*{Interpretação dos Coeficientes}
+\addcontentsline{toc}{subsection}{Interpretação dos Coeficientes}
+ 
+Com base nas correlações observadas na literatura para este conjunto de dados,
+espera-se, a posteriori, que:
+ 
+ 
+\begin{modelbox}
+\textbf{Modelo completo:}
+\[
+  PE_i \;=\; \beta_0 + \beta_1\,AT_i + \beta_2\,V_i
+            + \beta_3\,AP_i + \beta_4\,RH_i + \varepsilon_i,
+\]
+\[
+  \varepsilon_i \overset{\mathrm{iid}}{\sim} \Normal(0, \sig),
+  \qquad i = 1, \ldots, 9568.
+\]
+\textbf{Parâmetros:}
+$\boldsymbol{\theta} = (\beta_0, \beta_1, \beta_2, \beta_3, \beta_4, \sig) \in \mathbb{R}^4 \times \mathbb{R}_{>0}^2$.
+ 
+\medskip
+\textbf{Dimensões:} $n = 9568$, $p = 5$
+(1 intercepto $+ 4$ covariáveis), posto$(X) = p$
+(assumido; verificável pela ausência de multicolinearidade perfeita).
+\end{modelbox}
+ 
+% ══════════════════════════════════════════════════════════════════════════════
+\section*{Especificação Bayesiana}
+\addcontentsline{toc}{section}{Especificação Bayesiana}
+ 
+Adotando priors conjugados independentes:
+\begin{align}
+  \sig   &\;\sim\; \GI(a_0,\, b_0),
+  \label{eq:prior_sig} \\[4pt]
+  \mb \mid \sig &\;\sim\; \Normal_p\!\left(
+                    \boldsymbol{\mu}_0,\;
+                    \sig\,\Lambda_0^{-1}
+                  \right),
+  \label{eq:prior_beta}
+\end{align}
+de forma que $(\mb, \sig) \sim \mathcal{NIG}(\boldsymbol{\mu}_0, \Lambda_0, a_0, b_0)$.
+ 
+A posterior conjunta tem forma fechada:
+\[
+  (\mb, \sig \mid \mY, X)
+  \;\sim\;
+  \mathcal{NIG}(\boldsymbol{\mu}_n, \Lambda_n, a_n, b_n),
+\]
+com hiperparâmetros atualizados:
+\begin{align}
+  \Lambda_n      &= \Lambda_0 + X\T X, \\
+  \boldsymbol{\mu}_n &= \Lambda_n^{-1}
+                        (\Lambda_0\boldsymbol{\mu}_0 + X\T\mY), \\
+  a_n            &= a_0 + \frac{n}{2}, \\
+  b_n            &= b_0 + \frac{1}{2}
+                    \!\left(
+                      \mY\T\mY
+                      + \boldsymbol{\mu}_0\T\Lambda_0\boldsymbol{\mu}_0
+                      - \boldsymbol{\mu}_n\T\Lambda_n\boldsymbol{\mu}_n
+                    \right).
+\end{align}
+ 
+ 
+\subsection*{Escolha dos Hiperparâmetros}
+\addcontentsline{toc}{subsection}{Escolha dos Hiperparâmetros}
+ 
+Para análise inicial com pouca informação prévia sobre os coeficientes, uma
+escolha razoável é:
+\[
+  \boldsymbol{\mu}_0 = \mathbf{0}_5,
+  \quad
+  \Lambda_0 = ,
+  \quad
+  a_0 = b_0 = 0{,}01.
+\]
+
+ 
+
+
+
+
+
+\end{document}
