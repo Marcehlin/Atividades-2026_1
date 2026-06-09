@@ -108,6 +108,16 @@ W = 0.94813, p-value = 0.7251
 
 #### Interpretação da ANOVA
 
+```
+            Df Sum Sq Mean Sq F value Pr(>F)  
+Tamanho      2  10833    5417  25.000 0.0385 *
+Regiao       1    817     817   3.769 0.1917  
+Residuals    2    433     217                 
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+```
+
 Com base na tabela ANOVA:
 
 - **Fator A (Tamanho):** Valor-p = 0.0385, rejeita-se $H_0$ ao nível de 5%, concluindo que o tamanho da cidade influencia significativamente o prêmio cobrado.  
