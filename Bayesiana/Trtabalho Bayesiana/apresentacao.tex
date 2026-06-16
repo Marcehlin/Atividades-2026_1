@@ -1,0 +1,356 @@
+    \documentclass[10pt,aspectratio=169]{beamer}
+
+% --- PACOTES ESSENCIAIS ---
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{array}
+\usepackage{graphicx}
+
+% --- CONFIGURAÇÕES DE TEMA E CORES ---
+\usetheme{Madrid}
+\usecolortheme{whale}
+
+
+\definecolor{darkblue}{RGB}{20, 40, 80}
+\definecolor{midblue}{RGB}{40, 90, 150}
+\definecolor{lightblue}{RGB}{242, 246, 250}
+\definecolor{accentorange}{RGB}{211, 84, 0}
+
+\setbeamercolor{palette primary}{bg=darkblue, fg=white}
+\setbeamercolor{palette secondary}{bg=midblue, fg=white}
+\setbeamercolor{palette tertiary}{bg=darkblue, fg=white}
+\setbeamercolor{structure}{fg=darkblue}
+\setbeamercolor{titlelike}{parent=palette primary}
+\setbeamercolor{block title}{bg=midblue, fg=white}
+\setbeamercolor{block body}{bg=lightblue, fg=black}
+
+\setbeamerfont{title}{size=\Large, series=\bfseries}
+\setbeamerfont{frametitle}{size=\large, series=\bfseries}
+\setbeamertemplate{itemize items}[circle]
+
+\setbeamertemplate{navigation symbols}{}
+
+% --- INFORMAÇÕES DA CAPA ---
+\title[Regressão Linear Bayesiana]{Regressão Linear com Enfoque Bayesiano}
+\subtitle{\textit{Combined Cycle Power Plant}}
+\author[Estatística Bayesiana]{Disciplina: Estatística Bayesiana}
+\date{\today}
+
+\begin{document}
+
+% --- SLIDE 1: CAPA ---
+\begin{frame}[plain]
+    \titlepage
+\end{frame}
+
+% --- SLIDE 2: INTRODUÇÃO (CONTEXTO) ---
+\begin{frame}{Introdução}{O Problema e o Conjunto de Dados}
+    \begin{itemize}
+        \item \textbf{Objetivo Principal:} Modelar a relação entre covariáveis ambientais e a produção líquida horária de energia elétrica.
+        \item \textbf{Unidade de Medida da Resposta:} Megawatts (MW).
+        \item \textbf{Dataset:} \textit{Combined Cycle Power Plant} (UCI Machine Learning Repository).
+        \item \textbf{Características da Coleta:}
+        \begin{itemize}
+            \item Contém originalmente $n = 9568$ observações compiladas ao longo de 6 anos (2006--2011).
+            \item Coletas realizadas sob períodos em que a usina operou em carga total.
+            \item Os registros consistem em médias horárias obtidas por sensores especializados instalados na planta.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% --- SLIDE 3: INTRODUÇÃO (VARIÁVEIS) ---
+\begin{frame}{Introdução}{Estrutura e Descrição das Variáveis}
+    \begin{table}
+        \centering
+        \caption{Preditores Ambientais e Variável Resposta}
+        \small
+        \begin{tabular}{lll}
+            \toprule
+            \textbf{Variável} & \textbf{Descrição} & \textbf{Unidade de Medida} \\
+            \midrule
+            \texttt{AT} & Temperatura Ambiente & °C \\
+            \texttt{V}  & Vácuo de Exaustão & cm Hg \\
+            \texttt{AP} & Pressão Atmosférica & mbar \\
+            \texttt{RH} & Umidade Relativa do Ar & \% \\
+            \midrule
+            \textbf{\texttt{PE}} & \textbf{Potência Elétrica Líquida (Resposta)} & \textbf{MW} \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+\end{frame}
+
+% --- SLIDE 4: INTRODUÇÃO (PARADIGMA BAYESIANO) ---
+\begin{frame}{Introdução}{Abordagem Clássica vs. Abordagem Bayesiana}
+    \begin{block}{O Paradigma Bayesiano}
+        Diferente da regressão frequentista tradicional, a inferência bayesiana trata os parâmetros do modelo ($\boldsymbol{\beta}$ e $\sigma^2$) como \textbf{variáveis aleatórias}, permitindo a incorporação de conhecimento prévio por meio de distribuições \textit{a priori}.
+    \end{block}
+    \vspace{0.2cm}
+    \begin{itemize}
+        \item \textbf{Modelo Proposto:} Regressão linear gaussiana com prior conjugado \textbf{Normal--Gama Inversa} para o par de parâmetros $(\boldsymbol{\beta}, \sigma^2)$.
+        \item \textbf{Principais Vantagens:} 
+        \begin{itemize}
+            \item Possibilita a derivação analítica direta (exata) da distribuição posterior conjunta.
+            \item Fornece uma interpretação probabilística natural sobre os coeficientes de regressão e a variabilidade do erro.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+% --- SLIDE 5: TEORIA (MODELO GENERATIVO) ---
+\begin{frame}{1. Conceito Teórico}{1.1 Modelo Generativo}
+    Considere a formulação matricial clássica para o modelo de regressão linear:
+    $$\mathbf{Y} = X\boldsymbol{\beta} + \boldsymbol{\varepsilon}$$
+    Onde $\mathbf{Y} \in \mathbb{R}^{n}$, $X \in \mathbb{R}^{n \times p}$, $\boldsymbol{\beta} \in \mathbb{R}^{p}$ e o vetor de erros assume $\boldsymbol{\varepsilon} \sim \mathcal{N}_n(\mathbf{0}, \sigma^2 I_n)$.
+    \vspace{0.2cm}
+    
+    A distribuição condicional do vetor de respostas é expressa como:
+    $$\mathbf{Y} \mid \boldsymbol{\beta}, \sigma^2 \sim \mathcal{N}_n(X\boldsymbol{\beta},\, \sigma^2 I_n)$$
+    
+    Omitindo-se termos constantes, a função de \textbf{verossimilhança} do processo é dada por:
+    $$L(\boldsymbol{\beta}, \sigma^2) \propto (\sigma^2)^{-n/2} \exp\left( -\frac{(\mathbf{Y} - X\boldsymbol{\beta})^\top(\mathbf{Y} - X\boldsymbol{\beta})}{2\sigma^2} \right)$$
+\end{frame}
+
+% --- SLIDE 6: TEORIA (ESPECIFICAÇÃO DA PRIOR) ---
+\begin{frame}{1. Conceito Teórico}{1.2 Especificação da Distribuição Prior Conjugada}
+    Define-se a estrutura hierárquica da prior para o par de parâmetros $(\boldsymbol{\beta}, \sigma^2)$:
+    \begin{itemize}
+        \item A variância residual $\sigma^2$ segue uma distribuição \textbf{Gama Inversa} ($\text{IG}$):
+        $$\sigma^2 \sim \text{IG}(a_0, b_0) \implies p(\sigma^2) = \frac{b_0^{a_0}}{\Gamma(a_0)}(\sigma^2)^{-a_0-1} \exp\left(-\frac{b_0}{\sigma^2}\right)$$
+        \item Condicionalmente a $\sigma^2$, o vetor de coeficientes $\boldsymbol{\beta}$ segue uma \textbf{Normal Multivariada}:
+        $$\boldsymbol{\beta} \mid \sigma^2 \sim \mathcal{N}_p\left(\boldsymbol{\mu}_0,\, \sigma^2 \Lambda_0^{-1}\right)$$
+    \end{itemize}
+    \begin{block}{Prior Conjunta Normal--Gama Inversa (NIG)}
+        A composição conjunta dos parâmetros resulta na especificação:
+        $$(\boldsymbol{\beta}, \sigma^2) \sim \text{NIG}(\boldsymbol{\mu}_0, \Lambda_0, a_0, b_0)$$
+        Onde $\Lambda_0 \in \mathbb{R}^{p \times p}$ é uma matriz de precisão \textit{a priori} simétrica definida positiva.
+    \end{block}
+\end{frame}
+
+% --- SLIDE 7: TEORIA (TEOREMA DE BAYES) ---
+\begin{frame}{1. Conceito Teórico}{1.3 Aplicação do Teorema de Bayes}
+    A distribuição posterior conjunta dos parâmetros é proporcional ao produto da densidade amostral (verossimilhança) pela densidade conjunta \textit{a priori}:
+    $$p(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{Y}) \propto p(\mathbf{Y} \mid \boldsymbol{\beta}, \sigma^2)\, p(\boldsymbol{\beta}, \sigma^2)$$
+    \vspace{0.1cm}
+    Ao agrupar de forma ordenada as potências da variância $\sigma^2$ e os termos contidos na exponencial, a expressão conjunta torna-se:
+    {\small
+    $$p(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{Y}) \propto (\sigma^2)^{-a_0 - 1 - \frac{n}{2} - \frac{p}{2}} \exp\left[ -\frac{1}{\sigma^2}\left(b_0 + \frac{1}{2}(\mathbf{Y} - X\boldsymbol{\beta})^\top(\mathbf{Y} - X\boldsymbol{\beta}) + \frac{1}{2}(\boldsymbol{\beta} - \boldsymbol{\mu}_0)^\top \Lambda_0 (\boldsymbol{\beta} - \boldsymbol{\mu}_0)\right) \right]$$}
+\end{frame}
+
+% --- SLIDE 8: TEORIA (COMPLETANDO O QUADRADO) ---
+\begin{frame}{1. Conceito Teórico}{1.4 Álgebra e Fechamento de Quadrados}
+    Expandindo as formas quadráticas do expoente associadas a $\boldsymbol{\beta}$, obtemos a seguinte relação linear-quadrática:
+    $$\boldsymbol{\beta}^\top(X^\top X + \Lambda_0)\boldsymbol{\beta} - 2\boldsymbol{\beta}^\top(X^\top \mathbf{Y} + \Lambda_0 \boldsymbol{\mu}_0) + \mathbf{Y}^\top\mathbf{Y} + \boldsymbol{\mu}_0^\top\Lambda_0\boldsymbol{\mu}_0$$
+    \vspace{0.2cm}
+    Desta estrutura, isolamos os componentes definindo os novos \textbf{parâmetros posteriores}:
+    $$\boxed{\Lambda_n = X^\top X + \Lambda_0} \quad \text{e} \quad \boxed{\boldsymbol{\mu}_n = \Lambda_n^{-1}(X^\top \mathbf{Y} + \Lambda_0 \boldsymbol{\mu}_0)}$$
+    \vspace{0.2cm}
+    Ao completar o quadrado em relação ao vetor $\boldsymbol{\beta}$, a expressão final reduz-se a:
+    $$(\boldsymbol{\beta} - \boldsymbol{\mu}_n)^\top \Lambda_n (\boldsymbol{\beta} - \boldsymbol{\mu}_n) + \mathbf{Y}^\top\mathbf{Y} + \boldsymbol{\mu}_0^\top\Lambda_0\boldsymbol{\mu}_0 - \boldsymbol{\mu}_n^\top\Lambda_n\boldsymbol{\mu}_n$$
+\end{frame}
+
+% --- SLIDE 9: TEORIA (ATUALIZAÇÃO DE HIPERPARÂMETROS) ---
+\begin{frame}{1. Conceito Teórico}{1.5 e 1.6 Atualização dos Hiperparâmetros Posteriores}
+    A equivalência matemática garante que os parâmetros posteriores do modelo são atualizados analiticamente por meio das expressões:
+    \begin{block}{Parâmetros da Distribuição Posterior}
+        $$a_n = a_0 + \frac{n}{2}$$
+        $$b_n = b_0 + \frac{1}{2}\left(\mathbf{Y}^\top\mathbf{Y} + \boldsymbol{\mu}_0^\top\Lambda_0\boldsymbol{\mu}_0 - \boldsymbol{\mu}_n^\top\Lambda_n\boldsymbol{\mu}_n\right)$$
+    \end{block}
+    \vspace{0.2cm}
+    Dessa forma, conclui-se formalmente que a distribuição posterior conjunta é:
+    $$(\boldsymbol{\beta}, \sigma^2 \mid \mathbf{Y}) \sim \text{NIG}(\boldsymbol{\mu}_n, \Lambda_n, a_n, b_n)$$
+    Que pode ser fatorada recursivamente nas distribuições condicionais e marginais:
+    $$\sigma^2 \mid \mathbf{Y} \sim \text{IG}(a_n, b_n) \quad \text{e} \quad \boldsymbol{\beta} \mid \sigma^2, \mathbf{Y} \sim \mathcal{N}_p(\boldsymbol{\mu}_n,\, \sigma^2 \Lambda_n^{-1})$$
+\end{frame}
+
+% --- SLIDE 10: TEORIA (INTERPRETAÇÃO BAYESIANA) ---
+\begin{frame}{1. Conceito Teórico}{1.7 Interpretação Estatística do Modelo}
+    Os parâmetros posteriores completos tornam-se:
+    \begin{itemize}
+        \item $\boldsymbol{\mu}_0$ e $\Lambda_0$: Representam, respectivamente, a expectativa e a precisão iniciais atribuídas aos coeficientes técnicos.
+        \item $a_0$ e $b_0$: Governam o estado inicial de incerteza em relação ao ruído estocástico $\sigma^2$.
+    \end{itemize}
+    \begin{block}{A Média Posterior como Média Ponderada}
+        $$\boldsymbol{\mu}_n = (X^\top X + \Lambda_0)^{-1}(X^\top \mathbf{Y} + \Lambda_0 \boldsymbol{\mu}_0)$$
+        A equação explicita que a estimativa posterior dos coeficientes configura uma média ponderada combinando a informação proveniente dos dados amostrais ($X^\top \mathbf{Y}$) com o conhecimento estabelecido \textit{a priori} ($\Lambda_0 \boldsymbol{\mu}_0$).
+    \end{block}
+\end{frame}
+
+% --- SLIDE 11: DADOS (CARREGAMENTO) ---
+\begin{frame}{2. Dados}{Inspeção e Amostragem Computacional}
+    \begin{itemize}
+        \item \textbf{Volume Amostral Original:} $n = 9568$ linhas contendo $5$ variáveis contínuas.
+        \item \textbf{Estratégia Computacional:} Com a finalidade de construir uma análise prática ágil e didática, extraiu-se uma subamostra aleatória de \textbf{300 observações}.
+        \item \textbf{Reprodutibilidade:} Seleção aleatória estabilizada em ambiente de programação (R) utilizando a semente \texttt{set.seed(20260610)}.
+        \item \textbf{Integridade do Banco:} Uma avaliação detalhada via código (\texttt{colSums(is.na(dados))}) acusou a presença de **zero** valores faltantes ou inconsistências nulas em todas as colunas do dataset amostrado.
+    \end{itemize}
+\end{frame}
+
+% --- SLIDE 12: ANÁLISE DESCRITIVA (OBJETIVOS) ---
+\begin{frame}{3. Análise Descritiva}{Objetivos do Estudo Exploratório}
+    Antes de submeter as matrizes ao estimador bayesiano, a análise exploratória desempenha três papéis fundamentais no estudo:
+    \begin{enumerate}
+        \item \textbf{Avaliar a escala dimensional} de cada covariável do sistema, etapa indispensável para orientar a calibração adequada da matriz de hiperparâmetros de precisão \textit{a priori} ($\Lambda_0$).
+        \item \textbf{Rastrear colinearidade} (associações lineares internas) entre os preditores ambientais para precaver redundâncias de variância.
+        \item \textbf{Verificar preliminarmente a hipótese de linearidade} univariada cruzando individualmente cada preditor com a resposta de interesse (\texttt{PE}).
+    \end{enumerate}
+\end{frame}
+
+% --- SLIDE 13: ANÁLISE DESCRITIVA (MEDIDAS RESUMO) ---
+\begin{frame}{3. Análise Descritiva}{Resumo Estatístico das Variáveis (Amostra $n=300$)}
+    \begin{table}
+        \centering
+        \caption{Medidas de Posição, Distribuição e Quartis}
+        \label{tab:resumo}
+        \resizebox{\textwidth}{!}{%
+        \begin{tabular}{lcccccc}
+            \toprule
+            \textbf{Variável} & \textbf{Mínimo} & \textbf{1º Quartil} & \textbf{Mediana} & \textbf{Média} & \textbf{3º Quartil} & \textbf{Máximo} \\
+            \midrule
+            \texttt{AT} (°C)   & 2,34   & 12,49   & 19,09   & 19,23   & 26,02   & 32,95  \\
+            \texttt{V} (cm Hg)  & 34,03  & 41,38   & 52,38   & 54,20   & 66,79   & 79,74  \\
+            \texttt{AP} (mbar)  & 997,70 & 1009,20 & 1012,90 & 1013,54 & 1018,00 & 1031,70 \\
+            \texttt{RH} (\%)    & 32,25  & 63,87   & 74,91   & 74,01   & 85,74   & 100,07 \\
+            \textbf{\texttt{PE}} (MW) & 425,30 & 438,50  & 453,90  & 455,20  & 471,80  & 495,20 \\
+            \bottomrule
+        \end{tabular}%
+        }
+    \end{table}
+\end{frame}
+
+% --- SLIDE 14: ANÁLISE DESCRITIVA (VARIABILIDADE) ---
+\begin{frame}{3. Análise Descritiva}{Análise de Dispersão e Variabilidade}
+    \begin{table}
+        \centering
+        \caption{Variabilidade Marginal das Variáveis}
+        \label{tab:dispersion}
+        \small
+        \begin{tabular}{lccc}
+            \toprule
+            \textbf{Variável} & \textbf{Média Amostral} & \textbf{Desvio-Padrão (DP)} & \textbf{Coeficiente de Variação (CV\%)} \\
+            \midrule
+            \texttt{AT} & 19,227  & 7,805  & 40,59\% \\
+            \texttt{V}  & 54,205  & 12,891 & 23,78\% \\
+            \texttt{AP} & 1013,544& 6,077  & 0,60\%  \\
+            \texttt{RH} & 74,011  & 14,812 & 20,01\% \\
+            \midrule
+            \textbf{\texttt{PE}} & \textbf{455,202} & \textbf{17,906} & \textbf{3,93\%} \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    \begin{itemize}
+        \item \textbf{Destaque de Escala:} A pressão barométrica (\texttt{AP}) manifesta extrema estabilidade relativa ($\text{CV} = 0,60\%$), contrastando com a temperatura ambiente (\texttt{AT}), que exibe a dispersão proporcional mais acentuada ($\text{CV} = 40,59\%$).
+    \end{itemize}
+\end{frame}
+
+% --- SLIDE 15: ANÁLISE DESCRITIVA (MATRIZ DE CORRELAÇÃO) ---
+\begin{frame}{3. Análise Descritiva}{Matriz de Correlação Linear de Pearson}
+    \begin{table}
+        \centering
+        \caption{Coeficientes de Correlação Inter-variáveis}
+        \label{tab:correlacao}
+        \small
+        \begin{tabular}{lrrrrr}
+            \toprule
+            & \textbf{\texttt{AT}} & \textbf{\texttt{V}} & \textbf{\texttt{AP}} & \textbf{\texttt{RH}} & \textbf{\texttt{PE}} \\
+            \midrule
+            \textbf{\texttt{AT}} & 1,0000  & 0,8595  & -0,5830 & -0,5227 & -0,9524 \\
+            \textbf{\texttt{V}}  & 0,8595  & 1,0000  & -0,5026 & -0,2846 & -0,8929 \\
+            \textbf{\texttt{AP}}  & -0,5830 & -0,5026 & 1,0000  & 0,0939  & 0,5947  \\
+            \textbf{\texttt{RH}}  & -0,5227 & -0,2846 & 0,0939  & 1,0000  & 0,3630  \\
+            \midrule
+            \textbf{\texttt{PE}}  & \textbf{-0,9524} & \textbf{-0,8929} & \textbf{0,5947} & \textbf{0,3630} & \textbf{1,0000} \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    \begin{itemize}
+        \item \textbf{Associação com a Resposta:} As covariáveis \texttt{AT} ($r = -0,9524$) e \texttt{V} ($r = -0,8929$) exibem forte acoplamento linear negativo com a potência gerada (\texttt{PE}).
+        \item \textbf{Alerta de Colinearidade:} A forte correlação mútua observada entre a temperatura e o vácuo (\texttt{AT} e \texttt{V} com $r = 0,8595$) indica um expressivo compartilhamento de informação explicativa.
+    \end{itemize}
+\end{frame}
+
+% --- SLIDE 16: HISTOGRAMAS (DISTRIBUIÇÕES MARGINAIS) ---
+\begin{frame}{3. Análise Descritiva}{Distribuições Marginais (Histogramas)}
+    \begin{columns}[c]
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item \textbf{AT e V (Bimodais):} Apresentam comportamento com dois picos nítidos, sugerindo a existência de regimes operacionais distintos na usina.
+                \item \textbf{AP (Simétrica):} Exibe distribuição aproximadamente Normal (em forma de sino), refletindo alta estabilidade barométrica.
+                \item \textbf{RH (Assimétrica):} Assimetria à esquerda, indicando maior frequência de dias com umidade relativa elevada.
+                \item \textbf{PE (Resposta):} Mimetiza o padrão bimodal da temperatura, concentrando a produção em dois patamares de potência.
+            \end{itemize}
+        \end{column}
+        
+        \begin{column}{0.4\textwidth}
+            \begin{block}{Análise de Frequência e Densidade}
+                \centering
+                \includegraphics[width=0.98\linewidth]{histogramas.png}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% --- SLIDE 17: DIAGRAMAS DE DISPERSÃO (RELAÇÃO COM PE) ---
+\begin{frame}{3. Análise Descritiva}{Relação dos Preditores com a Resposta (PE)}
+    \begin{columns}[c]
+        \begin{column}{0.6\textwidth}
+            \begin{itemize}
+                \item \textbf{AT vs. PE ($r = -0,95$):} Fortíssima associação linear negativa. Configura-se como o preditor mais influente no rendimento energético.
+                \item \textbf{V vs. PE ($r = -0,89$):} Relação negativa acentuada, embora exiba maior dispersão nos valores intermediários.
+                \item \textbf{AP vs. PE ($r = 0,59$):} Correlação positiva moderada; elevações na pressão atmosférica tendem a aumentar a potência líquida.
+                \item \textbf{RH vs. PE ($r = 0,36$):} Associação positiva fraca e comportamento ruidoso, sugerindo menor peso explicativo direto.
+            \end{itemize}
+        \end{column}
+        
+        \begin{column}{0.4\textwidth}
+            \begin{block}{Comportamento Linear das Variáveis}
+                \centering
+                \includegraphics[width=0.98\linewidth]{dispersao.png}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% --- SLIDE 18: Regressão Linear  ---
+\begin{frame}{4. Modelo de Regressão Linear}{Formalizando: Notação e Definições}
+    Anteriormente dizemos que a formulação matricial para o modelo é:
+    $$\mathbf{Y} = X\boldsymbol{\beta} + \boldsymbol{\varepsilon}$$
+    Ou seja: 
+    $$Y_i = \beta_0 + \beta_1 x_{i1} + \beta_2 x_{i2} + \beta_3 x_{i3} + \beta_4 x_{i4} + \varepsilon_i, \quad i = 1, \ldots, n$$
+    
+    Onde $i = 1, 2, \ldots, n$ é o índice da observação. Definimos as seguintes quantidades para a $i$-ésima observação:
+\begin{columns}[t]
+
+% Coluna esquerda
+\column{0.40\textwidth}
+
+Onde $i = 1,2,\ldots,n$ é o índice da observação. 
+Definimos:
+
+\begin{itemize}
+\item $Y_i$: produção líquida de energia (MW)
+\item $x_{i1}$: temperatura ambiente $AT_i$ (°C)
+\item $x_{i2}$: vácuo de exaustão $V_i$ (cm Hg)
+\item $x_{i3}$: pressão ambiente $AP_i$ (mbar)
+\item $x_{i4}$: umidade relativa $RH_i$ (\%)
+\end{itemize}
+
+% Coluna direita
+\column{0.55\textwidth}
+
+Interpretação dos parâmetros:
+
+\begin{itemize}
+\item $\beta_1$: variação esperada em PE para cada aumento de 1°C em temperatura
+\item $\beta_2$: ... ...  para cada aumento de 1 cm Hg no vácuo
+\item $\beta_3$: ... ... para cada aumento de 1 mbar na pressão
+\item $\beta_4$: ... ... para cada aumento de 1 pp na umidade relativa
+\item $\varepsilon_i$: erro aleatório da $i$-ésima observação
+
+\end{itemize}
+\end{columns}
+\end{frame}
+
+\end{document}
