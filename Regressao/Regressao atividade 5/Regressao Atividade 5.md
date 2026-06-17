@@ -1,5 +1,6 @@
 # Atividade 5 -- Análise de Regressão: Calibração de Instrumentos
 
+Aluno: Marcelo Huang
 
 **Enunciado:** *"Dois instrumentos foram construídos para medir pressão em um processo industrial. Para cada instrumento foram obtidas leituras em diferentes níveis de pressão real, determinada por um método praticamente exato, porém lento e caro.* 
 
@@ -246,17 +247,27 @@ Combinando os três testes:
 
 **Em todos os casos, ao nível de significância usual de 5%, não há evidência estatisticamente suficiente para rejeitar a hipótese de que os dois instrumentos compartilham a mesma curva**, embora o valor-p do teste principal esteja muito próximo do limiar (0,0566), o que recomenda cautela e, se possível, a coleta de mais dados para reduzir essa incerteza.
 
-Dito disso, seguimos a Etapa 6 (diagnóstico de resíduos) com o **modelo único** (`modelo_unico`), por ser o mais parcimonioso e não ter sido rejeitado pelos testes.
+O modelo é:
+
+$$\text{Leitura} = \beta_0 + \beta_1\,\text{Pressao} + \beta_2\,\text{Pressao}^2 + \varepsilon$$
+
+Porém para reduzir a multicolinearidade entre Pressao e Pressao2, e conseguir dar uma interpretação prática, é feita uma centralização, substituindo pressão por pressão - mean(pressão).
+
+Logo o novo modelo único é 
+
+$$\text{Leitura} = \beta_0 + \beta_1\,\text{(Pressao - mean(Pressao))} + \beta_2\,\text{(Pressao - mean(Pressao))}^2 + \varepsilon$$
+
+Diante disso, seguimos a Etapa 6 (diagnóstico de resíduos) com o **modelo único** (`modelo_unico`), por ser o mais parcimonioso e não ter sido rejeitado pelos testes.
 
 ---
 
 ## Etapa 6: Análise de Resíduos e Diagnóstico do Modelo Final
 
-O modelo final escolhido é:
+O modelo final escolhido é o centralizado:
 
-$$\text{Leitura} = \beta_0 + \beta_1\,\text{Pressao} + \beta_2\,\text{Pressao}^2 + \varepsilon$$
+$$\text{Leitura} = \beta_0 + \beta_1\,（\text{Pressao - mean(Pressao)}） + \beta_2\,（\text{Pressao - mean(Pressao)}）^2 + \varepsilon$$
 
-ajustado com todos os 30 dados (`modelo_unico`). Vamos verificar os pressupostos clássicos do modelo de regressão: **linearidade**, **homocedasticidade**, **normalidade dos erros** e **independência**, além de procurar **outliers e pontos influentes**.
+ajustado com todos os 30 dados (`modelo_unico`). Vamos verificar os pressupostos do modelo de regressão: **linearidade**, **homocedasticidade**, **normalidade dos erros** e **independência**, além de procurar **outliers e pontos influentes**.
 
 #### 6.1 Linearidade -- resíduos vs valores ajustados
 
@@ -302,8 +313,8 @@ Como o conjunto de dados não fornece informação sobre a ordem temporal de col
 **Usando R para detectar outlier com resíduos studentizados:**
 
 ```
-   Pressao Leitura Instrumento Pressao2
-30   140.0  249.32 Instrument 2  19600
+   Pressao Leitura Instrumento Pressao2 Pressao_c Pressao_c2
+30   140.0  249.32 Instrument 2  19600    60        3600
 
       30
 -2.16
@@ -345,17 +356,17 @@ Nenhuma observação tem distância de Cook acima do limiar formal ($F_{p,\,n-p}
 
 ```
 	        Completo	    Sem_obs30
-(Intercept)	13.15156737	    10.745287330
-Pressao	    0.28954138	    0.383167155
-Pressao2	0.00942118	    0.008705686
+(Intercept)  96.61042764     97.115046954
+Pressao	     1.79693012	    1.776076836
+Pressao2	 0.00942118	    0.008705686
 R2          0.99251493      0.992563128
 ```
 
-**Interpretação**: O $R^2$ praticamente não se altera (0,9925 em ambos os casos), confirmando que a observação 30 não compromete o ajuste global do modelo. Já os coeficientes individuais apresentam mudanças mais notáveis: 
+**Interpretação**: O $R^2$ praticamente não se altera (0,9925 em ambos os casos), confirmando que a observação 30 não compromete o ajuste global do modelo. E os coeficientes individuais apresentam mudanças: 
 
-- o intercepto cai de 13,15 para 10,75 e 
+- o intercepto aumenta de 96,61 para 97,115 e 
 
-- o coeficiente de Pressao sobe de 0,290 para 0,383, enquanto 
+- o coeficiente de Pressao cai de 1,797 para 1,776, enquanto 
 
 - o coeficiente Pressao2 varia pouco (de 0,00942 para 0,00871). 
 
@@ -367,6 +378,7 @@ Conclui-se que a observação 30, apesar de ser a de maior resíduo studentizado
 #### 6.9 Curva final
 
 ![Curva](6_9_curva.png)
+
 A curva quadrática única descreve bem o comportamento dos dois instrumentos ao longo de toda a faixa de pressão estudada (20 a 140), com os pontos de ambos os instrumentos dispersos em torno da mesma curva, sem padrão sistemático de um instrumento ficar consistentemente acima ou abaixo do outro.
 
 #### 6.10 Resumo do diagnóstico
@@ -391,19 +403,22 @@ Os testes F formais (Etapa 5) não encontraram evidência estatisticamente signi
 
 **2. A relação Leitura x Pressão não é linear -- é necessário o termo quadrático.**
 
-Tanto a análise gráfica quanto os testes F (Etapa 3) mostraram que a curva de calibração tem **curvatura** (a leitura cresce mais que proporcionalmente em relação à pressão real, especialmente em pressões mais altas). O modelo recomendado (com a observação 30) é:
+Tanto a análise gráfica quanto os testes F (Etapa 3) mostraram que a curva de calibração tem **curvatura** (a leitura cresce mais que proporcionalmente em relação à pressão real, especialmente em pressões mais altas). 
 
-$$\text{Leitura} = 13{,}15 + 0{,}29 \times \text{Pressao} + 0{,}0094 \times \text{Pressao}^2$$
+O modelo final recomendado é aquele que utiliza a pressão centralizada ($\widetilde{X} = X - \bar{X}$, com $\bar{X} = 80$):
 
-(equivalentemente, invertendo essa relação, a empresa pode estimar a pressão real a partir da leitura observada).
+$$\text{Leitura} = 96{,}61 + 1{,}797 \times \text{(Pressao - 80)} + 0{,}00942 \times \text{(Pressao-80)}^2$$
 
-**3. O modelo final é estatisticamente adequado**, com $R^2 \approx 0{,}993$, resíduos aproximadamente normais e sem pontos de influência, embora exista uma indicação leve de heterocedasticidade. 
+Interpretação dos coeficientes: 96,61 é a leitura prevista na pressão média de 80 unidades. O coeficiente linear (1,797) indica a taxa de crescimento da leitura nesse ponto central, e o coeficiente quadrático (0,00942) quantifica a curvatura da relação. 
+
+**3. O modelo final é estatisticamente adequado**, com $R^2 \approx 0{,}993$, resíduos aproximadamente normais e sem pontos de influência excessiva, embora exista uma indicação leve de que **o erro de medição aumenta em pressões mais altas** (heterocedasticidade). 
 
 **4. Recomendação prática:**
 
 * Adotar **uma única curva de calibração quadrática** para os dois instrumentos, simplificando o processo de calibração e manutenção (menos curvas para documentar, calibrar e revalidar).
 * Como o valor-p do teste de curvas distintas ($\approx 0{,}057$) ficou **muito próximo do limiar de 5%**, e há indício de heterocedasticidade, seria prudente que a empresa **coletasse leituras adicionais** -- principalmente em pressões mais altas -- para reforçar a confiança na decisão de usar uma curva única e, se necessário, refinar o modelo (por exemplo, considerando variância não constante).
-* Em pressões próximas ao limite superior testado (140), recomenda-se atenção redobrada, pois é a região de maior incerteza (maior alavancagem e pode ter maior variabilidade residual).
+* Em pressões próximas ao limite superior testado (140), recomenda-se atenção redobrada, pois é a região de maior incerteza (maior alavancagem e maior variabilidade residual).
+
 
 ---
 
@@ -524,6 +539,12 @@ anova(modelo_intercepto, modelo_completo)
 
 #summary(modelo_curva)
 
+dados$Pressao_c  <- dados$Pressao - mean(dados$Pressao)   # média = 80
+dados$Pressao_c2 <- dados$Pressao_c^2
+
+modelo_unico <- lm(Leitura ~ Pressao_c + Pressao_c2, data = dados)
+#summary(modelo_unico)
+
 residuos  <- residuals(modelo_unico)
 ajustados <- fitted(modelo_unico)
 
@@ -531,6 +552,7 @@ plot(ajustados, residuos,
      xlab = "Valores ajustados", ylab = "Resíduos",
      main = "Resíduos vs Ajustados (Linearidade)")
 abline(h = 0, lty = 2, col = "gray")
+
 
 library(lmtest)
 bptest(modelo_unico)
@@ -601,7 +623,8 @@ legend("topleft", legend = levels(dados$Instrumento),
 
 # Curva ajustada
 nova_pressao <- seq(min(dados$Pressao), max(dados$Pressao), length.out = 200)
-pred <- predict(modelo_unico, newdata = data.frame(Pressao = nova_pressao,
-                                                     Pressao2 = nova_pressao^2))
+nova_pressao_c <- nova_pressao - mean(dados$Pressao)
+pred <- predict(modelo_unico, newdata = data.frame(Pressao_c  = nova_pressao_c,
+                                                    Pressao_c2 = nova_pressao_c^2))
 lines(nova_pressao, pred, col = "black", lwd = 2)
 ```
