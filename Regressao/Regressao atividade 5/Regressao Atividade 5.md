@@ -419,6 +419,14 @@ Interpretação dos coeficientes: 96,61 é a leitura prevista na pressão média
 * Como o valor-p do teste de curvas distintas ($\approx 0{,}057$) ficou **muito próximo do limiar de 5%**, e há indício de heterocedasticidade, seria prudente que a empresa **coletasse leituras adicionais** -- principalmente em pressões mais altas -- para reforçar a confiança na decisão de usar uma curva única e, se necessário, refinar o modelo (por exemplo, considerando variância não constante).
 * Em pressões próximas ao limite superior testado (140), recomenda-se atenção redobrada, pois é a região de maior incerteza (maior alavancagem e maior variabilidade residual).
 
+**5. Como achar a pressao real a partir da leitura do instrumento:**
+
+Se alguém observa uma leitura L e quer encontrar X (pressão real), precisa resolver a equação inserindo leitura L e achando o X, mas teria duas raizes para X por causa do termo quadrático.
+
+Mas note que, o vértice da nossa curva(parábola) é $X_{\text{vértice}}=80-\frac{b_1}{2b_2}=80-\frac{1,797}{2 \times 0,00942}\approx80-95,4\approx-15,4$
+
+Assim O vértice está em pressão $\approx -15$, muito fora da faixa dos dados. Além disso, dentro de [20, 140] a parábola é estritamente crescente, então esse problema de ambiguidade não ocorre no seu caso, sempre haverá uma única raiz válida.
+
 
 ---
 
