@@ -60,6 +60,10 @@ O processo de geração segue três passos:
 
 3. **Vendas da empresa ($Y_t$):** calculadas como $Y_t = \beta_0 + \beta_1 X_t + \varepsilon_t$.
 
+
+**Note que**: "O enunciado diz que os dados são "trimestrais com ajuste sazonal". Dessa forma, optei por gerar $X_t$​ sem componente sazonal explícito (apenas tendência + ruído branco). Isso  dispensa qualquer correção sazonal na análise."
+
+
 ---
 
 ## Item 2: Análise Exploratória
