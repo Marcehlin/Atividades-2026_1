@@ -1,0 +1,160 @@
+---
+title: "lista 4 séries"
+output:
+  pdf_document: default
+  html_document: default
+date: "2026-06-24"
+---
+
+### Exercício 2
+
+#### Teste da raiz unitária
+
+A série que iremos ajustar é a série *UnempRate*, presente no pacote *astsa* do R. Essa série representa o número de desempregados nos EUA, por mês, dos anos de 1948 até 2016.
+
+Em primeiro lugar, iremos realizar uma breve análise da série. Para realizar futuras validações do modelo, dividirimos a base em treino-tese, sendo a base de teste os últimos 12 meses de observações.
+
+```{r, echo=FALSE}
+library(astsa)
+data(UnempRate)
+
+n <- length(UnempRate)
+h <- 12
+
+treino <- UnempRate[1:(n-h)]
+teste <- UnempRate[(n-h+1):n]
+
+ts.plot(treino, main = 'Série da taxa de desempregados mensal (1948-2016)', xlab = 'Tempo', ylab = 'Número de desempregados', col='darkgreen')
+```
+
+```{r,, echo=FALSE}
+summary(treino)
+```
+
+Agora, vamos aplicar o teste da raiz unitária para analisar a estacionariedade da série. Para isso, vamos usar o teste ADF, que analisa as hipóteses
+
+$$
+\begin{cases} H_0: \text{a série possui raiz unitária (série não-estacionária)} \\ H_1: \text{a série não possui raiz unitária (série estacionária)} \end{cases}
+$$
+
+```{r,, include=FALSE}
+library(tseries)
+adf.test(treino)
+```
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+acf(treino)
+pacf(treino)
+par(mfrow=c(1,1))
+```
+
+Como p-valor = 0,29 \> 0,05, a um nível de significância de 5%, não rejeitamos $H_0$ e temos evidências de que a série não é estacionária. Além disso, os gráficos de autocorrelação indicam que os valores demoram muito a decair, indicativo claro de tendência.
+
+Para resolver o problema, iremos realizar uma diferenciação de ordem 1 para retirar a tendência.
+
+```{r, echo=FALSE}
+serie_diff <- diff(treino)
+ts.plot(serie_diff, main = 'Série diferenciada da taxa de desempregados mensal (1948-2016)', xlab = 'Tempo', ylab = 'Número de desempregados', col='darkgreen')
+```
+
+```{r, include=FALSE}
+adf.test(serie_diff)
+```
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+acf(serie_diff)
+pacf(serie_diff)
+par(mfrow=c(1,1))
+```
+
+Feita a diferenciação, o teste ADF nos dá um p-valor = 0,01 \< 0,05, rejeitamos $H_0$ e temos evidências de que a série se tornou estacionária.
+
+Porém, analisando o gráfico de autocorrelação, se percebe um padrão sazonal nos valores a cada lag de 10-12 meses.
+
+Desse modo, iremos realizar uma diferenciação sazonal de ordem 12 para retirar a sazonalidade da série já diferenciada.
+
+```{r, include=FALSE}
+serie_diff12 <- diff(serie_diff, 12)
+```
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+acf(serie_diff12)
+pacf(serie_diff12)
+par(mfrow=c(1,1))
+```
+
+Realizada a diferenciação sazonal, temos que o padrão temporal na autocorrelação não se torna mais tão evidente.
+
+#### Verificação de outliers
+
+Nessa etapa, verificaremos se há existência de outliers na série que possam afetar o desempenho do modelo.
+
+Usaremos a função $\texttt{tsoutliers}$ presente no pacote $\texttt{forecast}$.
+
+Verificando outliers na série, vemos pela função $\texttt{tsoutliers}$ que não há outliers.
+
+```{r, include=FALSE}
+library(forecast)
+tsoutliers(treino)
+```
+
+#### Ajuste do modelo
+
+Feita a detecção de outliers, ajustaremos o modelo. Como já fizemos as diferenciações, o parâmetro $d$ será 0. Usando a função $\texttt{auto.arima}$ para encontrar o melhor modelo, encontramos que o melhor modelo para a série diferenciada será o $ARIMA(1,0,2)$.
+
+```{r, include=FALSE}
+ajuste <- auto.arima(serie_diff12)
+summary(ajuste)
+```
+
+Desse modo, a série ajustada é
+
+$$
+\Delta^{12}X_t = \phi_1X_{t-1}+\epsilon_t+\theta_1\epsilon_{t-1}+\theta_2\epsilon_{t-2},
+$$
+
+substituindo com os coeficientes encontrados pela função:
+
+$$
+\Delta^{12}X_t = 0,7226X_{t-1}+\epsilon_t-0,6257\epsilon_{t-1}+0,1621\epsilon_{t-2}
+$$
+
+#### Análise de resíduos
+
+Agora, iremos realizar o diagnóstico dos resíduos para verificar se atendem aos pressupostos desejados, que são:
+
+-   Resíduos com média próximas de zero;
+
+-   Independentes, ou seja, sem autocorrelação;
+
+-   Teste de Ljung-Box não-significativo, isto é, não-rejeição da hipótese nula $H_0: \rho_1 = \rho_2 = \dots = 0$.
+
+```{r, echo=FALSE}
+sarima(serie_diff12,1,0,2)
+```
+
+Na saída da função $\texttt{sarima}$, vemos que:
+
+-   Os coeficientes $\phi_1, \theta_1$ e $\theta_2$ são estatisticamente significativo, pois seus p-valores são menores do que 0,05;
+
+-   A média dos resíduos padronizados é próxima de zero;
+
+-   A autocorrelação de quase todos os lags se mantém dentro dos intervalos de confiança no gráfico ACF, indicando independência dos resíduos;
+
+-   Os p-valores do teste Ljung-Box se mantém maiores do que o nível de significância de 0,05 nos primeiros lags
+
+Portanto, todos os pressupostos do modelo de séries temporais foram validados.
+
+#### Previsões
+
+Ajustado o nosso modelo, o passo final é fazer previsões para o nosso modelo.
+
+Usando a função $\texttt{autoplot}$, iremos prever os próximos 12 meses da nossa série. Observando apenas as últimas 60 observações para uma melhor visualização, temos que a previsão do próximo ano será:
+
+```{r, echo=FALSE}
+prev <- forecast(ajuste, h = 12)
+plot(prev)
+```
