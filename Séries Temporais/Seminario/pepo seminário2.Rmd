@@ -1,0 +1,318 @@
+---
+title: "seminário séries"
+output:
+  pdf_document: default
+  html_document: default
+date: "2026-06-27"
+---
+
+### Sumário
+
+1.  Introdução: explicação da base, importação e filtro 2016-2026
+2.  Análise exploratória: gráfico da série, tabela de descritivas, ACF/PACF, série decomposta
+3.  Estacionariedade: testes & diferenciação
+4.  Modelagem: verificar pressupostos atendidos, ajustar o modelo SARIMA adequado, comparação de BIC
+5.  Diagnóstico dos resíduos: ACF, Ljung-Box, normalidade, homocedasticidade
+6.  Previsão: previsão de h semanas, intervalos de confiança, comparação real
+7.  Validação: treino/teste, métricas de validação
+
+### 1. Introdução
+
+A análise de séries temporais é um método estatístico bem eficiente quando tratamos de dados levantados ao longo de um determinado período de tempo.
+
+Por isso, para esse trabalho, iremos realizar uma análise completa de uma série temporal, desde as medidas descritivas, decomposição STL, identificação de outliers até ajuste de modelos ARIMA e previsões.
+
+A série temporal escolhida para análise é a série do **número de jogadores semanais de Counter Strike 2, reconhecido como CSGO(Counter-Strike Global Offensive) antes de 2023**, um jogo de tiro multiplayer.
+
+Nessa série, foi levantado a quantidade de pessoas que jogaram Counter Strike 2 desde que o jogo foi lançado, no dia 30 de novembro de 2011. Os dados foram obtidos da base de dados da Steam, plataforma na qual Counter Strike 2 se encontra disponível para download.
+
+Porém, para uma análise mais focada nos últimos anos e uma precisão maior, a série foi reduzida entre os dias 1 de janeiro de 2016 e 31 de dezembro de 2025. Além disso, transformamos o número de jogadores diários, o padrão da base em que pegamos, para jogadores semanais.
+
+```{r, include=FALSE}
+# Códigos fornecidos em aula
+
+media.amplitude<-function(x,k)
+{N<-length(x)
+x.m<-rep(0,(N-k))
+x.r<-rep(0,(N-k))
+for (i in 1:(N-k)) x.m[i]<-mean(x[i:(i+k)])
+for (i in 1:(N-k)) x.r[i]<-max(x[i:(i+k)])-min(x[i:(i+k)])
+plot(x.m,x.r,xlab="medias",ylab="amplitude")
+aa1<-lm(x.r~x.m)
+print(summary(aa1))
+abline(aa1$coef[1],aa1$coef[2],col=2)
+}
+
+media.moveis<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstar<-rep(0,N)
+for (i in 1:k) xstar[i]<-NA
+for (i in (1+k):(N-k)) xstar[i]<-mean(x[(i-k):(i+k)],na.rm=TRUE)
+for (i in (N-k+1):N) xstar[i]<-NA
+ts.plot(x, col='darkorange3')
+lines(xstar, col=2, lwd=1)
+xstar}
+
+mediana.bloco<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstar<-rep(0,N)
+for (i in 1:k) xstar[i]<-NA
+for (i in (1+k):(N-k)) xstar[i]<-median(x[(i-k):(i+k)],na.rm=TRUE)
+for (i in (N-k+1):N) xstar[i]<-NA
+ts.plot(x)
+lines(xstar, col=2, lwd=2)
+xstar}
+
+media.bloco<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstar<-rep(NA,N)
+valor<-N%/%k
+for (i in 1:valor)
+  xstar[((i-1)*k+1):(i*k)]<-rep(mean(x[((i-1)*k+1):(i*k)],na.rm=TRUE),k)
+for (i in (valor*k+1):N) xstar[i]<-mean(x[(valor*k+1):N])
+ts.plot(x)
+lines(xstar, col=2, lwd=2)
+xstar}
+
+amplitude.bloco<-function(x,k)
+{x<-as.vector(x)
+N<-length(x)
+xstarM<-rep(NA,N)
+xstarm<-rep(NA,N)
+valor<-N%/%k
+for (i in 1:valor){
+  xstarM[((i-1)*k+1):(i*k)]<-rep(max(x[((i-1)*k+1):(i*k)],na.rm=TRUE),k)
+  xstarm[((i-1)*k+1):(i*k)]<-rep(min(x[((i-1)*k+1):(i*k)],na.rm=TRUE),k)
+}
+ts.plot(x)
+lines(xstarM, col=2,lty=3, lwd=2)
+lines(xstarm, col=2,lty=3, lwd=2)
+}
+
+grafico.sazonalidade<-function(x,s){
+  x<-as.vector(x)
+  N<-length(x)
+  Mx<-max(x)
+  mx<-min(x)
+  valor<-N%/%s
+  eixox<-seq(1:s)
+  plot(eixox,x[1:s],ylim=c(mx,Mx),xlim=c(0,(s+1)),type="l")
+  for (i in 1:valor){
+    y<-rep(NA,s)
+    y[1:s]<-x[((i-1)*s+1):(i*s)]
+     lines(y,col=i)
+  }
+  y<-rep(NA,s)
+  y<-x[(valor*s+1):N]
+  lines(y,col=(valor+1))
+}
+
+grafico.boxplot<-function(x,s){
+  x<-as.vector(x)
+  N<-length(x)
+  valor<-N%/%s
+  apoiox<-rep(NA,N)
+  apoioy<-rep(1:s,valor)
+  for(i in 1:(s*valor)) apoiox[i]<-apoioy[i]
+  boxplot(x~apoiox,xlab='Sazonalidade')
+}
+
+polinomio.ajustado<-function(x,p){
+  x<-as.vector(x)
+  N<-length(x)
+  XX<-matrix(0,N,p)
+  for (i in 1:N) {
+    for (j in 1:p) XX[i,j]<-i**j}
+  aa<-lm(x~XX)
+  ts.plot(x)
+  lines(aa$fitted,col=2)
+  aa$res}
+```
+
+```{r, include=FALSE}
+cs <- read.csv("~/séries temporais/counter_strike.csv", sep=';')
+```
+
+```{r, warning=FALSE, include=FALSE}
+library(dplyr)
+library(lubridate)
+
+cs_semanal <- cs |>
+  dplyr::mutate(semana = floor_date(as.Date(DateTime), unit = "week", week_start = 1)) |>
+  dplyr::filter(semana >= as.Date("2016-01-01") & semana <= as.Date("2025-12-31")) |>
+  dplyr::group_by(semana) |>
+  dplyr::summarise(jogadores = mean(Players, na.rm = TRUE))
+```
+
+### 2. Análise descritiva
+
+Com a série apresentada, começaremos, agora, uma breve análise descritiva da série a fim de entender o comportamento visual da série de jogadores de Counter Strike 2 e caracterizar sua estrutura.
+
+Para isso, iremos primeiramente visualizar a série, no período delimitado anterior.
+
+```{r, echo=FALSE}
+serie <- ts(cs_semanal$jogadores,
+                 start = c(2016, 1),
+                 frequency = 52)
+plot(serie, main = "Número de jogadores semanais de Counter Strike 2 (2016-2025)",
+     xlab="Tempo (semana do ano)", ylab="Nº de jogadores", col="darkorange3")
+```
+
+```{r, echo=FALSE}
+summary(serie)
+```
+
+Analisando visualmente a série, percebemos que ela possui uma tendência crescente bem evidente, com poucos picos decrescentes que mudem o crescimento da série. Esse comportamento se dá devido ao jogo ser multijogador, ou seja, não possui fases e mantém as pessoas jogando por mais tempo.
+
+Além disso, há vários picos evidentes ao longo do tempo, provavelmente indicativos de eventos ou atualizações no jogo para aumentar o número de jogadores.
+
+Para verificar melhor a tendência, tanto quanto outros componentes da série, iremos decompô-lá por meio da função $\texttt{stl}$, a qual decompõe a série em:
+
+$$
+X_t = T_t + S_t + R_t, 
+$$
+
+em que $T_t$ é o componente de tendência, $S_t$ é o componente sazonal e $R_t$ é o componente residual.
+
+```{r, echo=FALSE}
+decomp <- stl(serie, s.window="periodic")
+plot(decomp, main = "Decomposição da série de jogadores de CS2", col='darkorange3')
+```
+
+Com a série decomposta, podemos analisar seus componentes mais detalhadamente.
+
+A tendência já age conforme o esperado, com um claro padrão crescente por todo o tempo analisado. Já a sazonalidade também é bem evidente, apresentando pico de jogadores em todo começo de ano, período de férias ou recesso, o que aumenta o número de jogadores.
+
+Por fim, temos os resíduos, o restante da série após retirarmos a tendência e a sazonalidade. Exceto por picos em 2020 (pandemia) e 2023-2024 (lançamento do CS2), os resíduos não apresentam padrão evidente, oscilando em torno de série com o passar do tempo.
+
+A última análise a ser feita nessa etapa será avaliar a presença de autocorrelação e autocorrelação parcial, ferramentas para identificar a dependência temporal da série.
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+acf(serie, main = "Autocorrelação", col='darkorange3')
+pacf(serie, main = "Autocorrelação parcial", col='darkorange3')
+par(mfrow=c(1,1))
+```
+
+Analisando a autocorrelação, há um indicativo forte de tendência, uma vez que os lags decaem de forma lenta, demorando a entrar no intervalo de confiança. Isso é uma evidência para diferenciarmos a série, passo que será feito na próxima etapa.
+
+Já a autocorrelação parcial mostra um pico do lag 1 muito próximo de 1 decaindo rapidamente para dentro do intervalo de confiança logo no próximo lag, evidenciando que a série possa ser modelado futuramente como um modelo autoregressivo de ordem 1.
+
+### 3. Estacionariedade
+
+Como analisado na última etapa, é claro que a série utilizada não é estacionária, ou seja, sua média não se mantém constante ao longo do tempo.
+
+Além da decomposição e gráfico ACF, uma maneira mais precisa de verificar estacionariedade é por meio de dois testes estatísticos. O teste Dickey-Fuller Aumentado (ADF) e o teste KPSS.
+
+O teste ADF tem como hipóteses:
+
+$$
+\begin{cases} H_0: \text{há raiz unitária (série não-estacionária)} \\ H_1: \text{não há raiz unitária (série estacionária)}\end{cases}
+$$
+
+enquanto o teste KPSS apresenta:
+
+$$
+\begin{cases} H_0: \text{Série estacionária} \\ H_1: \text{Série não-estacionária}\end{cases}
+$$
+
+Realizando os teste:
+
+```{r}
+library(tseries)
+adf.test(serie)
+```
+
+```{r, echo=FALSE, warning=FALSE}
+kpss.test(serie)
+```
+
+O p-valor do teste resultou em aproximadamente 0,038, ou seja, rejeitamos $H_0$ e temos evidências que a série é estacionária.
+
+Entretanto, o teste KPSS resultou em um p-valor menor que 0,01, ou seja, esse teste já indica que a série não é estacionária.
+
+Dado a divergência dos testes e o fato dos gráficos anteriores indicarem com clareza a tendência crescente da série, o caminho é diferenciar a série e refazer os testes.
+
+Iremos fazer, então, uma diferenciação de ordem 1 na série, isto é,
+
+$$
+X_t = X_t - X_{t-1}
+$$
+
+```{r}
+serie_diff <- diff(serie)
+plot(serie_diff, main = "Série dos jogadores de CS diferenciada",
+     xlab="Semanas", ylab="Nº de jogadores", col='darkorange3')
+```
+
+Percebemos, analisando o gráfico da série diferenciada, que após uma diferenciação a série se tornou bem mais estacionária do que a anterior, com indícios de que a média se tornou constante.
+
+Para confirmar a suspeita de estacionariedade, realizaremos os teste ADF e KPSS novamente, juntamente com os gráficos de ACF e PACF.
+
+```{r, warning=FALSE, echo=FALSE}
+adf.test(serie_diff)
+```
+
+```{r, warning=FALSE, echo=FALSE}
+kpss.test(serie_diff)
+```
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+acf(serie_diff, main = "Autocorrelação", col='darkorange3')
+pacf(serie_diff, main = "Autocorrelação parcial", col='darkorange3')
+par(mfrow=c(1,1))
+```
+
+Uma vez que ambos os testes indicam que a série se tornou estacionária e o gráfico ACF mostra uma queda brusca do lag 0 ao lag 1, comportamento esperado em tendência constante, temos evidências suficientes para concluir que a série dos jogadores semanais de CS2 se torna estacionária após uma diferenciação.
+
+### 4. Detecção de outliers
+
+```{r}
+library(forecast)
+outliers2 <- tsoutliers(serie)
+datas <- cs_semanal$semana
+
+data.frame(
+  posicao     = outliers2$index,
+  data        = datas[outliers2$index],
+  valor_orig  = as.vector(serie)[outliers2$index],
+  valor_sug   = round(outliers2$replacements)
+)
+```
+
+### 5. Modelagem
+
+Após analisar os componentes da série e detectar os outliers, podemos, enfim, ajustar um modelo apropriado para a nossa série temporal.
+
+Podemos encontrar o modelo de duas maneiras diferentes: manualmente, analisando os gráficos ACF e PACF, ou pela função $\texttt{auto.arima}$, que ajusta o melhor modelo ARIMA encontrando aquele com o menor BIC, critério muito usado em seleção de modelos.
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+acf(serie_diff, main = "Autocorrelação", col='darkorange3')
+pacf(serie_diff, main = "Autocorrelação parcial", col='darkorange3')
+par(mfrow=c(1,1))
+```
+
+Em primeiro lugar, vale lembrar que esses gráficos ACF e PACF são optidos após a diferenciação de ordem 1 da série. Logo, teremos $d=1$ como parâmetro do modelo ARIMA.
+
+Analisando o gráfico PACF, percebe-se que, após o lag 1, o próximo lag decai rapidamente para o intervalo de confiança. Com isso, um valor possível para o parâmetro autoregressivo seria $p =1$.
+
+Agora, pelo gráfico ACF, percebe-se que o lag 1 apresenta-se para fora do intervalo de confiança e o lag 2 está em cima do tracejado, ou seja, no limiar do IC. Assim, um valor para o parâmetro de médias móveis seria $q=1$ ou $q=2$.
+
+Porém, é válido perceber que ambos os gráficos apresentam um comportamente sazonal a cada um ano, de acordo com a escala transformada dos gráficos. Desse modo, uma diferença sazonal de 52 semanas, isto é, um ano, seria ideal para remover a sazonalidade.
+
+```{r, echo=FALSE}
+library(forecast)
+modelo <- auto.arima(serie,stepwise=FALSE)
+summary(modelo)
+```
+
+Encontrando o melhor modelo ARIMA pelo função $\texttt{auto.arima}$, percebemos que aquele com menor BIC indica que
+
+$$
+X_t \sim ARIMA(1,1,2)(0,0,1)[52]
+$$ é o melhor modelo, confirmando o ajuste manual pelos gráficos.
