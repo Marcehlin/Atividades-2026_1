@@ -152,6 +152,7 @@ alternative hypothesis: stationary
 data:  serie_diff
 KPSS Level = 0.043643, Truncation lag parameter = 6, p-value = 0.1
 ```
+<img src="3_diff_acf_pacf.png" alt="3_diff_acf_pacf" width="500" height = "500"/>
 
 Uma vez que ambos os testes indicam que a série se tornou estacionária e o gráfico ACF mostra uma queda brusca do lag 0 ao lag 1, comportamento esperado em tendência constante, temos evidências suficientes para concluir que a série dos jogadores semanais de CS2 se torna estacionária após uma diferenciação.
 
